@@ -2,37 +2,26 @@
 
 # dependencies
 /node_modules
-/.pnp
-.pnp.js
 
-# testing
-/coverage
+# next.js
+/.next/
+/out/
 
 # production
 /build
 
-
-# dotenv environment variable files
-.env
-env/
-
-# misc
-/dist
-.DS_Store
-
-
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-/test-results/
-/playwright-report/
-/playwright/.cache/
+.pnpm-debug.log*
 
-# PyCharm
-.idea
-!.idea/
-.idea/*
-!.idea/runConfigurations/
+# env files
+.env*
 
+# vercel
 .vercel
-.netlify
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
