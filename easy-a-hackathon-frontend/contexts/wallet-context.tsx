@@ -25,6 +25,15 @@ const peraWallet = new PeraWalletConnect({
 });
 const deflyWallet = new DeflyWalletConnect();
 
+// Browser extension wallet detection
+const detectExodusWallet = () => {
+  return typeof window !== 'undefined' && window.algorand && window.algorand.isExodus;
+};
+
+const detectLuteWallet = () => {
+  return typeof window !== 'undefined' && window.lute;
+};
+
 interface WalletProviderProps {
   children: ReactNode
 }
@@ -47,25 +56,36 @@ export function WalletProvider({ children }: WalletProviderProps) {
     deflyWallet.connector?.on("disconnect", handleDisconnect)
 
     const lastUsedProvider = localStorage.getItem("walletProvider") as WalletProviderType | null;
+    const savedAccount = localStorage.getItem("activeAccount");
     
-    if (lastUsedProvider) {
+    if (lastUsedProvider && savedAccount) {
       setIsConnecting(true);
-      let reconnectPromise;
+      
       if (lastUsedProvider === 'pera') {
-        reconnectPromise = peraWallet.reconnectSession();
+        peraWallet.reconnectSession()
+          .then((accounts) => {
+            if (accounts && accounts.length > 0) {
+              setAccountAddress(accounts[0])
+            }
+          })
+          .catch(e => console.log(`${lastUsedProvider} reconnect error:`, e))
+          .finally(() => setIsConnecting(false));
       } else if (lastUsedProvider === 'defly') {
-        reconnectPromise = deflyWallet.reconnectSession();
+        deflyWallet.reconnectSession()
+          .then((accounts) => {
+            if (accounts && accounts.length > 0) {
+              setAccountAddress(accounts[0])
+            }
+          })
+          .catch(e => console.log(`${lastUsedProvider} reconnect error:`, e))
+          .finally(() => setIsConnecting(false));
+      } else if (lastUsedProvider === 'exodus' || lastUsedProvider === 'lute') {
+        // For browser extensions, just restore the saved account
+        setAccountAddress(savedAccount);
+        setIsConnecting(false);
       } else {
         setIsConnecting(false);
-        return;
       }
-
-      reconnectPromise.then((accounts) => {
-        if (accounts && accounts.length > 0) {
-          setAccountAddress(accounts[0])
-        }
-      }).catch(e => console.log(`${lastUsedProvider} reconnect error:`, e)).finally(() => setIsConnecting(false));
-
     } else {
       setIsConnecting(false)
     }
@@ -81,14 +101,45 @@ export function WalletProvider({ children }: WalletProviderProps) {
     setIsConnecting(true)
     try {
       let accounts: string[] = [];
+      
       if (provider === "pera") {
         accounts = await peraWallet.connect()
       } else if (provider === "defly") {
         accounts = await deflyWallet.connect()
-      } else {
-        alert(`Connecting with ${provider} is coming soon!`)
-        setIsConnecting(false)
-        return;
+      } else if (provider === "exodus") {
+        if (!detectExodusWallet()) {
+          alert("Exodus wallet extension not detected. Please install the Exodus browser extension.")
+          setIsConnecting(false)
+          return;
+        }
+        try {
+          const response = await (window as any).algorand.connect()
+          if (response && response.accounts && response.accounts.length > 0) {
+            accounts = response.accounts.map((acc: any) => acc.address)
+          }
+        } catch (error) {
+          console.error("Exodus wallet connection failed:", error)
+          alert("Failed to connect to Exodus wallet. Please try again.")
+          setIsConnecting(false)
+          return;
+        }
+      } else if (provider === "lute") {
+        if (!detectLuteWallet()) {
+          alert("Lute wallet extension not detected. Please install the Lute browser extension.")
+          setIsConnecting(false)
+          return;
+        }
+        try {
+          const response = await (window as any).lute.connect()
+          if (response && response.accounts && response.accounts.length > 0) {
+            accounts = response.accounts
+          }
+        } catch (error) {
+          console.error("Lute wallet connection failed:", error)
+          alert("Failed to connect to Lute wallet. Please try again.")
+          setIsConnecting(false)
+          return;
+        }
       }
 
       if (accounts.length > 0) {
@@ -117,6 +168,12 @@ export function WalletProvider({ children }: WalletProviderProps) {
         await peraWallet.disconnect()
       } else if (lastUsedProvider === 'defly') {
         await deflyWallet.disconnect()
+      } else if (lastUsedProvider === 'exodus') {
+        // Exodus doesn't require explicit disconnect for browser extension
+        console.log("Disconnecting Exodus wallet")
+      } else if (lastUsedProvider === 'lute') {
+        // Lute doesn't require explicit disconnect for browser extension
+        console.log("Disconnecting Lute wallet")
       }
     } catch (e) {
       console.error("Error during disconnect:", e);
