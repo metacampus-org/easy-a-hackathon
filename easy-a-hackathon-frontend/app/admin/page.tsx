@@ -160,33 +160,24 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Link>
-            <div className="flex items-center space-x-2">
-              <Shield className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">University Admin</span>
-            <Button variant="outline" size="sm">
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
 
       <div className="container mx-auto px-4 py-8">
         {/* Dashboard Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">Badge Management Dashboard</h2>
-          <p className="text-muted-foreground">Review and approve student badge requests</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold text-foreground mb-2">Badge Management Dashboard</h2>
+              <p className="text-muted-foreground">Review and approve student badge requests</p>
+            </div>
+            <div className="flex gap-3">
+              <Link href="/admin/transcript">
+                <Button size="lg" className="bg-primary hover:bg-primary/90">
+                  <Users className="mr-2 h-5 w-5" />
+                  Manage Students
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -228,6 +219,35 @@ export default function AdminDashboard() {
                 Total Requests
               </CardTitle>
               <div className="text-2xl font-bold text-foreground">{stats.totalRequests}</div>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
+          <Link href="/admin/transcript">
+            <Card className="border-border hover:border-primary/50 transition-colors cursor-pointer">
+              <CardHeader className="text-center pb-4">
+                <Users className="h-8 w-8 text-primary mx-auto mb-2" />
+                <CardTitle className="text-lg">Student Management</CardTitle>
+                <CardDescription>Onboard new students and manage transcripts</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+          
+          <Card className="border-border hover:border-primary/50 transition-colors cursor-pointer opacity-75">
+            <CardHeader className="text-center pb-4">
+              <Award className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <CardTitle className="text-lg text-muted-foreground">Course Catalog</CardTitle>
+              <CardDescription>Manage course offerings and requirements</CardDescription>
+            </CardHeader>
+          </Card>
+          
+          <Card className="border-border hover:border-primary/50 transition-colors cursor-pointer opacity-75">
+            <CardHeader className="text-center pb-4">
+              <Shield className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <CardTitle className="text-lg text-muted-foreground">System Settings</CardTitle>
+              <CardDescription>Configure blockchain and system preferences</CardDescription>
             </CardHeader>
           </Card>
         </div>

@@ -16,7 +16,7 @@ export default function HomePage() {
   useEffect(() => {
     if (isConnected && userRole) {
       if (userRole === "admin") {
-        router.push("/admin/transcript")
+        router.push("/admin")
       } else {
         router.push("/student")
       }
@@ -43,7 +43,7 @@ export default function HomePage() {
                 Student Portal
               </Button>
             </Link>
-            <Link href="/admin/transcript">
+            <Link href="/admin">
               <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent">
                 <GraduationCap className="mr-2 h-5 w-5" />
                 University Portal
@@ -248,41 +248,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Technology Section */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto text-center">
-          <h3 className="text-3xl font-bold mb-8 text-foreground">Powered by Algorand</h3>
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-8">
-              <Card className="border-border text-left">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span>Sustainable & Fast</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Algorand's pure proof-of-stake consensus uses minimal energy while processing 
-                    transactions in under 5 seconds with instant finality.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-              
-              <Card className="border-border text-left">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span>Low Cost & Secure</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Minimal transaction fees make blockchain storage affordable while maintaining 
-                    enterprise-grade security and immutability.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="bg-card border-t border-border py-12 px-4">

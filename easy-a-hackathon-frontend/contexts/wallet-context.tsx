@@ -107,8 +107,15 @@ export function WalletProvider({ children }: WalletProviderProps) {
       } else if (lastUsedProvider === 'exodus' || lastUsedProvider === 'lute') {
         // For browser extensions, just restore the saved account
         setAccountAddress(savedAccount);
-        determineUserRole(savedAccount);
-        setIsConnecting(false);
+        if (isConnected && userRole) {
+          if (userRole === "admin") {
+            router.push("/admin")
+          } else {
+            router.push("/student")
+          }
+        } else {
+          setIsConnecting(false)
+        }
       } else {
         setIsConnecting(false);
       }
