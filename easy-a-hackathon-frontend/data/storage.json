@@ -1,17 +1,78 @@
 {
   "version": 1,
-  "timestamp": "2025-01-07T10:19:07.000Z",
+  "timestamp": "2025-09-07T11:39:29.758Z",
   "exportedBy": "MetaCAMPUS Storage Service",
   "summary": {
-    "totalStudents": 0,
+    "totalStudents": 2,
     "totalTranscripts": 0,
-    "totalBadgeRequests": 0,
-    "totalBadges": 0
+    "totalBadgeRequests": 2,
+    "totalBadges": 1
   },
   "data": {
-    "students": [],
+    "students": [
+      {
+        "studentHash": "7b2266697273744e616d65223a2272616e646f6d222c226c6173744e616d65223a2272616e646f6d222c22646174654f664269727468223a22323032352d30392d3330222c226e6174696f6e616c4964223a22222c22696e737469747574696f6e4964223a22554e4956303031222c2274696d657374616d70223a313735373234343036343830397d",
+        "personalInfo": {
+          "firstName": "random",
+          "lastName": "random",
+          "dateOfBirth": "2025-09-30",
+          "nationalId": ""
+        },
+        "institutionId": "UNIV001",
+        "institutionName": "University College",
+        "enrollmentDate": "2025-09-07T11:21:04.809Z",
+        "status": "active",
+        "createdAt": 1757244064809,
+        "updatedAt": 1757244064809
+      },
+      {
+        "studentHash": "7b2266697273744e616d65223a22677579677567222c226c6173744e616d65223a22677975677579222c22646174654f664269727468223a22323032352d30392d3137222c226e6174696f6e616c4964223a22222c22696e737469747574696f6e4964223a22554e4956303031222c2274696d657374616d70223a313735373234353132383139327d",
+        "personalInfo": {
+          "firstName": "guygug",
+          "lastName": "gyuguy",
+          "dateOfBirth": "2025-09-17",
+          "nationalId": ""
+        },
+        "institutionId": "UNIV001",
+        "institutionName": "University College",
+        "enrollmentDate": "2025-09-07T11:38:48.192Z",
+        "status": "active",
+        "createdAt": 1757245128192,
+        "updatedAt": 1757245128192
+      }
+    ],
     "transcripts": [],
-    "badgeRequests": [],
-    "badges": []
+    "badgeRequests": [
+      {
+        "id": "req_1757242942814_36oxk5aw2",
+        "studentHash": "student_hash_placeholder",
+        "courseId": "MATH201",
+        "courseName": "Calculus II",
+        "requestDate": "2025-09-07T11:02:22.814Z",
+        "status": "approved",
+        "adminWallet": "N4HTLJPU5CSTE475XZ42LHWPVTTR4S2L35Y2YD4VFM6V4DUJPMCWFMTNF4",
+        "approvalDate": "2025-09-07T11:04:02.234Z",
+        "blockchainHash": "7b2273747564656e7448617368223a2273747564656e745f686173685f706c616365686f6c646572222c22636f757273654964223a224d415448323031222c2274696d657374616d70223a313735373234333034323233332c22697373756572223a224d65746143414d505553227d"
+      },
+      {
+        "id": "req_1757245169758_v2wyiipys",
+        "studentHash": "FBEOML5ATZDUEXMKJ642IV363LWSSXWO5L5IEGZFPKXGOXOIX6IKYFDHKQ",
+        "courseId": "MATH201",
+        "courseName": "Calculus II",
+        "requestDate": "2025-09-07T11:39:29.758Z",
+        "status": "pending"
+      }
+    ],
+    "badges": [
+      {
+        "badgeHash": "7b2273747564656e7448617368223a2273747564656e745f686173685f706c616365686f6c646572222c22636f757273654964223a224d415448323031222c2274696d657374616d70223a313735373234333034323233332c22697373756572223a224d65746143414d505553227d",
+        "studentHash": "student_hash_placeholder",
+        "courseId": "MATH201",
+        "courseName": "Calculus II",
+        "issueDate": "2025-09-07T11:04:02.234Z",
+        "verificationHash": "7b22626164676548617368223a22376232323733373437353634363536653734343836313733363832323361323237333734373536343635366537343566363836313733363835663730366336313633363536383666366336343635373232323263323236333666373537323733363534393634323233613232346434313534343833323330333132323263323237343639366436353733373436313664373032323361333133373335333733323334333333303334333233323333333332633232363937333733373536353732323233613232346436353734363134333431346435303535353332323764222c2273747564656e7448617368223a2273747564656e745f686173685f706c616365686f6c646572222c22636f757273654964223a224d415448323031222c22697373756544617465223a22323032352d30392d30375431313a30343a30322e3233345a222c2274696d657374616d70223a313735373234333034323233337d",
+        "blockchainTxId": "simulated_tx_1757243042233"
+      }
+    ]
   }
 }

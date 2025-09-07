@@ -19,7 +19,7 @@ import {
   Copy,
   CheckCircle
 } from "lucide-react"
-import { TranscriptService, type TranscriptVerificationResult } from "@/lib/transcript-service"
+import { transcriptService, type TranscriptVerificationResult } from "@/lib/transcript-service"
 import { useToast } from "@/components/ui/use-toast"
 import { WalletButton } from "@/components/wallet-button"
 
@@ -41,7 +41,7 @@ export default function StudentPortalPage() {
 
     setIsLoading(true)
     try {
-      const result = await TranscriptService.verifyTranscript(studentHash)
+      const result = await transcriptService.verifyTranscript(studentHash)
       setTranscriptData(result)
       
       toast({

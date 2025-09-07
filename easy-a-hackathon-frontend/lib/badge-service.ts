@@ -34,7 +34,7 @@ export const BADGE_APP_ID = process.env.NEXT_PUBLIC_BADGE_APP_ID
 export class BadgeService {
   
   // Generate unique badge hash
-  static generateBadgeHash(studentHash: string, courseId: string, timestamp: number): string {
+  generateBadgeHash(studentHash: string, courseId: string, timestamp: number): string {
     const dataString = JSON.stringify({
       studentHash,
       courseId,
@@ -49,7 +49,7 @@ export class BadgeService {
   }
 
   // Create badge request (student-initiated)
-  static async createBadgeRequest(
+  async createBadgeRequest(
     studentHash: string,
     courseId: string,
     courseName: string,
@@ -107,7 +107,7 @@ export class BadgeService {
   }
 
   // Approve badge request (admin-initiated)
-  static async approveBadgeRequest(
+  async approveBadgeRequest(
     requestId: string,
     adminWallet: string
   ): Promise<{ badgeHash: string; txId: string; verificationHash: string }> {
@@ -123,6 +123,17 @@ export class BadgeService {
       
       if (!request) {
         throw new Error(`Badge request ${requestId} not found`)
+      }
+
+      // Check if the same wallet created and is trying to approve the request
+      if (request.studentHash === adminWallet) {
+        throw new Error("🚫 CONFLICT OF INTEREST: The same wallet cannot create and approve a badge request. Students and admins must use different wallets.")
+      }
+
+      // Additional check: Only the main admin wallet can approve badges
+      const MAIN_ADMIN_WALLET = "N4HTLJPU5CSTE475XZ42LHWPVTTR4S2L35Y2YD4VFM6V4DUJPMCWFMTNF4";
+      if (adminWallet !== MAIN_ADMIN_WALLET) {
+        throw new Error("🚫 ACCESS DENIED: Only the main university administrator wallet can approve badge requests.")
       }
 
       console.log("📋 Found badge request:", request.courseName, "for student", request.studentHash)
@@ -241,7 +252,7 @@ export class BadgeService {
   }
 
   // Verify badge exists on blockchain
-  static async verifyBadge(badgeHash: string): Promise<{ isValid: boolean; badge?: Badge }> {
+  async verifyBadge(badgeHash: string): Promise<{ isValid: boolean; badge?: Badge }> {
     try {
       console.log("🔍 Verifying badge:", badgeHash)
 
@@ -286,7 +297,7 @@ export class BadgeService {
   }
 
   // Generate verification hash for badge data
-  private static generateVerificationHash(badgeData: any): string {
+  private generateVerificationHash(badgeData: any): string {
     const dataString = JSON.stringify({
       badgeHash: badgeData.badgeHash,
       studentHash: badgeData.studentHash,
@@ -301,7 +312,7 @@ export class BadgeService {
   }
 
   // Get all badge requests (for admin dashboard)
-  static async getAllBadgeRequests(): Promise<BadgeRequest[]> {
+  async getAllBadgeRequests(): Promise<BadgeRequest[]> {
     try {
       return await fileStorageService.getBadgeRequests()
     } catch (error) {
@@ -311,7 +322,7 @@ export class BadgeService {
   }
 
   // Get badge requests for specific student
-  static async getStudentBadgeRequests(studentHash: string): Promise<BadgeRequest[]> {
+  async getStudentBadgeRequests(studentHash: string): Promise<BadgeRequest[]> {
     try {
       return await fileStorageService.getBadgeRequests(studentHash)
     } catch (error) {
@@ -320,3 +331,6 @@ export class BadgeService {
     }
   }
 }
+
+// Export singleton instance
+export const badgeService = new BadgeService()

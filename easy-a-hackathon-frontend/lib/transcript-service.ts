@@ -130,7 +130,7 @@ export class TranscriptService {
       }
 
       // Save to local storage for persistence
-      await storageService.saveStudent(studentRecord)
+      await fileStorageService.saveStudent(studentRecord)
 
       // Create application call transaction
       const suggestedParams = await algodClient.getTransactionParams().do()
