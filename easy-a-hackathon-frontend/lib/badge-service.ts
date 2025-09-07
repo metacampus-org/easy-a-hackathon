@@ -27,8 +27,8 @@ export interface Badge {
 }
 
 // Smart Contract Application ID for Badge Management
-export const BADGE_APP_ID = process.env.NEXT_PUBLIC_BADGE_APP_ID
-  ? Number.parseInt(process.env.NEXT_PUBLIC_BADGE_APP_ID)
+export const BADGE_APP_ID = process.env.NEXT_PUBLIC_ALGORAND_APP_ID
+  ? Number.parseInt(process.env.NEXT_PUBLIC_ALGORAND_APP_ID)
   : 0
 
 export class BadgeService {
@@ -53,6 +53,7 @@ export class BadgeService {
     studentHash: string,
     courseId: string,
     courseName: string,
+    studentWallet: string,
     additionalInfo?: string
   ): Promise<{ requestId: string; txId?: string }> {
     try {
@@ -80,7 +81,7 @@ export class BadgeService {
           const suggestedParams = await algodClient.getTransactionParams().do()
 
           const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
-            sender: "PLACEHOLDER_ADDRESS", // Will be replaced by actual wallet
+            from: studentWallet, // Use the provided student wallet
             appIndex: BADGE_APP_ID,
             onComplete: algosdk.OnApplicationComplete.NoOpOC,
             appArgs: [
@@ -95,14 +96,36 @@ export class BadgeService {
           
           return { requestId, txId }
         } catch (blockchainError) {
-          console.warn("⚠️ Blockchain request failed, using local storage only:", blockchainError)
+          console.warn("⚠️ Blockchain request failed:", blockchainError)
+          // Check if error is due to account issues
+          const blockchainErrorMessage = blockchainError instanceof Error ? blockchainError.message : String(blockchainError);
+          if (blockchainErrorMessage.includes("unauthorized") || blockchainErrorMessage.includes("not opted in")) {
+            throw new Error("Account is not authorized to create badge requests. Please ensure your account is properly set up.");
+          }
+          console.log("Falling back to local storage only");
         }
       }
 
       return { requestId }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Error creating badge request:", error)
-      throw error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("unauthorized")) {
+        throw new Error("Unauthorized: Your account is not allowed to create badge requests");
+      }
+      throw new Error(errorMessage)
+    }
+  }
+
+  // Check if wallet is admin
+  private static async isAdminWallet(walletAddress: string): Promise<boolean> {
+    if (!BADGE_APP_ID || BADGE_APP_ID <= 0) return false;
+    try {
+      const appInfo = await algodClient.getApplicationByID(BADGE_APP_ID).do();
+      return appInfo.params.creator === walletAddress;
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+      return false;
     }
   }
 
@@ -111,6 +134,11 @@ export class BadgeService {
     requestId: string,
     adminWallet: string
   ): Promise<{ badgeHash: string; txId: string; verificationHash: string }> {
+    // Verify admin privileges
+    const isAdmin = await this.isAdminWallet(adminWallet);
+    if (!isAdmin) {
+      throw new Error("Unauthorized: Only admin wallets can approve badge requests");
+    }
     try {
       console.log("🎓 BADGE APPROVAL INITIATED")
       console.log("Request ID:", requestId)
@@ -161,7 +189,7 @@ export class BadgeService {
 
           // First, approve the request
           const approveCallTxn = algosdk.makeApplicationCallTxnFromObject({
-            sender: adminWallet,
+            from: adminWallet,
             appIndex: BADGE_APP_ID,
             onComplete: algosdk.OnApplicationComplete.NoOpOC,
             appArgs: [
@@ -173,7 +201,7 @@ export class BadgeService {
 
           // Then, create the meta badge
           const createBadgeCallTxn = algosdk.makeApplicationCallTxnFromObject({
-            sender: adminWallet,
+            from: adminWallet,
             appIndex: BADGE_APP_ID,
             onComplete: algosdk.OnApplicationComplete.NoOpOC,
             appArgs: [
@@ -241,7 +269,7 @@ export class BadgeService {
   }
 
   // Verify badge exists on blockchain
-  static async verifyBadge(badgeHash: string): Promise<{ isValid: boolean; badge?: Badge }> {
+  static async verifyBadge(badgeHash: string, walletAddress: string): Promise<{ isValid: boolean; badge?: Badge }> {
     try {
       console.log("🔍 Verifying badge:", badgeHash)
 
@@ -257,7 +285,7 @@ export class BadgeService {
           const suggestedParams = await algodClient.getTransactionParams().do()
 
           const verifyCallTxn = algosdk.makeApplicationCallTxnFromObject({
-            sender: "PLACEHOLDER_ADDRESS", // Read-only operation
+            from: walletAddress,
             appIndex: BADGE_APP_ID,
             onComplete: algosdk.OnApplicationComplete.NoOpOC,
             appArgs: [

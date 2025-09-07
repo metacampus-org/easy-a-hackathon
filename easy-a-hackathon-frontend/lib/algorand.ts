@@ -1,8 +1,17 @@
 import algosdk from "algosdk"
-const crypto = require("crypto")
+import { Buffer } from 'buffer'
 
-// Lora network testnet configuration
-const ALGORAND_SERVER = "https://testnet-api.4160.nodely.dev"
+interface StateKeyValue {
+  key: Uint8Array;
+  value: {
+    bytes?: Uint8Array;
+    uint?: bigint;
+    type: number;
+  };
+}
+
+// Algorand testnet configuration
+const ALGORAND_SERVER = "https://testnet-api.algonode.cloud"
 const ALGORAND_PORT = 443
 const ALGORAND_TOKEN = ""
 
@@ -70,11 +79,11 @@ export class AlgorandService {
       const accountInfo = await algodClient.accountInformation(address).do()
       return {
         address: accountInfo.address,
-        balance: accountInfo.amount / 1000000, // Convert microAlgos to Algos
-        minBalance: accountInfo["min-balance"] / 1000000,
+        balance: Number(accountInfo.amount) / 1000000, // Convert microAlgos to Algos
+        minBalance: Number(accountInfo.minBalance) / 1000000,
         assets: accountInfo.assets || [],
-        appsLocalState: accountInfo["apps-local-state"] || [],
-        appsOptedIn: accountInfo["apps-total-opted-in"] || 0,
+        appsLocalState: accountInfo.appsLocalState || [],
+        appsOptedIn: accountInfo.totalAppsOptedIn || 0,
       }
     } catch (error) {
       console.error("Error fetching account info:", error)
@@ -169,17 +178,17 @@ export class AlgorandService {
         methodArgs: [badgeHash, studentId],
         sender: algosdk.getApplicationAddress(METACAMPUS_APP_ID), // Use app address for read-only calls
         suggestedParams,
-        signer: algosdk.makeLogicSigAccountTransactionSigner({
-          lsig: new algosdk.LogicSigAccount(new Uint8Array(0))
-        }, algosdk.getApplicationAddress(METACAMPUS_APP_ID))
+        signer: algosdk.makeLogicSigAccountTransactionSigner(
+          new algosdk.LogicSigAccount(new Uint8Array(0))
+        )
       })
 
       try {
         const result = await atc.execute(algodClient, 3)
         const returnValue = result.methodResults[0].returnValue
-        
-        if (returnValue && returnValue.length > 0) {
-          const badgeData = JSON.parse(Buffer.from(returnValue).toString())
+
+        if (returnValue && typeof returnValue === 'string') {
+          const badgeData = JSON.parse(returnValue)
           return { verified: true, badge: badgeData }
         }
       } catch (error) {
@@ -198,16 +207,12 @@ export class AlgorandService {
     try {
       // Fallback: Read global state directly
       const appInfo = await algodClient.getApplicationByID(METACAMPUS_APP_ID).do()
-      const globalState = appInfo.params["global-state"]
-
-      if (!globalState) {
-        return { verified: false }
-      }
+      const globalState = appInfo.params.globalState || []
 
       // Look for badge data using the badge_data key prefix
       const badgeDataKey = `badge_data${badgeHash}`
       const keyToFind = Buffer.from(badgeDataKey).toString("base64")
-      const badgeState = globalState.find(kv => kv.key === keyToFind)
+      const badgeState = globalState.find((kv: StateKeyValue) => Buffer.from(kv.key).toString("base64") === keyToFind)
 
       if (!badgeState || !badgeState.value.bytes) {
         return { verified: false }
@@ -236,7 +241,7 @@ export class AlgorandService {
       }
 
       const appInfo = await algodClient.getApplicationByID(METACAMPUS_APP_ID).do()
-      const globalState = appInfo.params["global-state"]
+      const globalState = appInfo.params.globalState
 
       if (!globalState) {
         return { exists: false, approved: false }
@@ -245,7 +250,7 @@ export class AlgorandService {
       // Check if request exists
       const requestKey = `badge_request${requestId}`
       const requestKeyBase64 = Buffer.from(requestKey).toString("base64")
-      const requestState = globalState.find(kv => kv.key === requestKeyBase64)
+      const requestState = globalState.find((kv: StateKeyValue) => Buffer.from(kv.key).toString('base64') === requestKeyBase64)
 
       if (!requestState) {
         return { exists: false, approved: false }
@@ -254,16 +259,16 @@ export class AlgorandService {
       // Check if request is approved
       const approvedKey = `approved${requestId}`
       const approvedKeyBase64 = Buffer.from(approvedKey).toString("base64")
-      const approvedState = globalState.find(kv => kv.key === approvedKeyBase64)
+      const approvedState = globalState.find((kv: StateKeyValue) => Buffer.from(kv.key).toString('base64') === approvedKeyBase64)
 
-      const approved = approvedState && approvedState.value.bytes ? 
-        Buffer.from(approvedState.value.bytes, "base64").toString() === "approved" : false
+      const approved = approvedState?.value.bytes ? 
+        new TextDecoder().decode(approvedState.value.bytes) === "approved" : false
 
       // Get timestamp if available
       const timestampKey = `timestamp${requestId}`
       const timestampKeyBase64 = Buffer.from(timestampKey).toString("base64")
-      const timestampState = globalState.find(kv => kv.key === timestampKeyBase64)
-      const timestamp = timestampState && timestampState.value.uint ? timestampState.value.uint : undefined
+      const timestampState = globalState.find((kv: StateKeyValue) => Buffer.from(kv.key).toString('base64') === timestampKeyBase64)
+      const timestamp = timestampState?.value.uint ? Number(timestampState.value.uint) : undefined
 
       return { exists: true, approved, timestamp }
     } catch (error) {
@@ -294,7 +299,7 @@ export class AlgorandService {
     }
   }
 
-  static generateBadgeHash(badge: Omit<MetaBadge, "badgeHash">): string {
+  static generateBadgeHash(badge: Omit<MetaBadge, "badgeHash">): string | Promise<string> {
     const badgeData = JSON.stringify({
       studentId: badge.studentId,
       courseId: badge.courseId,
@@ -303,7 +308,21 @@ export class AlgorandService {
       issueTimestamp: badge.issueTimestamp,
     })
 
-    // Create SHA-256 hash of badge data
-    return crypto.createHash("sha256").update(badgeData).digest("hex")
+    // Use Web Crypto API in browser, Node.js crypto in server
+    if (typeof window !== "undefined" && window.crypto && window.crypto.subtle) {
+      // Browser environment
+      const encoder = new TextEncoder()
+      const data = encoder.encode(badgeData)
+      return window.crypto.subtle.digest("SHA-256", data).then((hashBuffer) => {
+        return Array.from(new Uint8Array(hashBuffer))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")
+      })
+    } else {
+      // Node.js environment
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const crypto = require("crypto")
+      return crypto.createHash("sha256").update(badgeData).digest("hex")
+    }
   }
 }

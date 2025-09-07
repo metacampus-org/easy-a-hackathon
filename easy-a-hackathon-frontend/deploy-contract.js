@@ -3,6 +3,7 @@
 
 const algosdk = require('algosdk');
 const fs = require('fs');
+require('dotenv').config({ path: '.env.local' }); // Load environment variables from .env.local
 
 // Algorand testnet configuration
 const ALGORAND_SERVER = "https://testnet-api.algonode.cloud";
@@ -134,13 +135,53 @@ async function deployContract() {
   console.log("🚀 Deploying MetaCAMPUS Badge Management Smart Contract...\n");
   
   try {
-    // Step 1: Generate a new account for deployment (or use existing)
-    console.log("1. Setting up deployment account...");
-    const deployerAccount = algosdk.generateAccount();
-    console.log(`   Deployer Address: ${deployerAccount.addr}`);
-    console.log(`   Deployer Mnemonic: ${algosdk.secretKeyToMnemonic(deployerAccount.sk)}`);
-    console.log("   ⚠️  IMPORTANT: Fund this account with testnet ALGOs before deployment!");
-    console.log("   Get testnet ALGOs from: https://bank.testnet.algorand.network/\n");
+    // 1) Load and validate the deployer mnemonic from env
+  console.log("1. Setting up deployment account...");
+
+  // Expect the mnemonic in .env.local as ALGORAND_MNEMONIC="word1 word2 ... word25"
+  const rawMnemonic = process.env.ALGORAND_MNEMONIC || "";
+  // Normalize whitespace and quotes that sometimes sneak in from copy/paste
+  const deployerMnemonic = rawMnemonic
+    .replace(/[“”]/g, '"')        // smart quotes -> straight
+    .replace(/[‘’]/g, "'")
+    .replace(/\s+/g, " ")         // collapse multiple spaces/newlines/tabs
+    .trim();
+
+  if (!deployerMnemonic) {
+    throw new Error(
+      "ALGORAND_MNEMONIC is missing. Put your 25-word testnet mnemonic in .env.local as ALGORAND_MNEMONIC."
+    );
+  }
+
+  const words = deployerMnemonic.split(" ");
+  if (words.length !== 25) {
+    throw new Error(
+      `ALGORAND_MNEMONIC must have 25 words, found ${words.length}. Check for missing or extra words/spaces.`
+    );
+  }
+
+  let deployerAccount;
+  try {
+    deployerAccount = algosdk.mnemonicToSecretKey(deployerMnemonic);
+  } catch (e) {
+    throw new Error(
+      "Failed to decode ALGORAND_MNEMONIC. One or more words may be invalid. Re-copy your 25-word phrase."
+    );
+  }
+
+  console.log(`   Deployer Address: ${deployerAccount.addr}`);
+
+  // Optional: verify against the address you expect
+  const expectedAddress = "SCQ735PTYORIKD5YQJ4XXYCKEO34DJIGS7LOAZFFSALHF6B5KAUXCS7SUM";
+  if (deployerAccount.addr !== expectedAddress) {
+    throw new Error(
+      `Address mismatch. Derived ${deployerAccount.addr} != expected ${expectedAddress}. Check the mnemonic.`
+    );
+  }
+
+  console.log(`   ⚠️  IMPORTANT: Fund this account with testnet ALGOs before deployment!`);
+  console.log("   Get testnet ALGOs from the official dispenser.\n");
+
     
     // Check account balance
     try {
@@ -160,9 +201,22 @@ async function deployContract() {
     
     // Step 2: Compile TEAL programs
     console.log("2. Compiling TEAL programs...");
-    const approvalProgram = new Uint8Array(Buffer.from(await algodClient.compile(APPROVAL_PROGRAM).do().result, "base64"));
-    const clearProgram = new Uint8Array(Buffer.from(await algodClient.compile(CLEAR_STATE_PROGRAM).do().result, "base64"));
-    console.log("   ✅ Programs compiled successfully\n");
+    let approvalProgram, clearProgram;
+    try {
+      const compiledApproval = await algodClient.compile(APPROVAL_PROGRAM).do();
+      const compiledClear = await algodClient.compile(CLEAR_STATE_PROGRAM).do();
+      
+      if (!compiledApproval.result || !compiledClear.result) {
+        throw new Error("Failed to compile TEAL programs");
+      }
+      
+      approvalProgram = new Uint8Array(Buffer.from(compiledApproval.result, "base64"));
+      clearProgram = new Uint8Array(Buffer.from(compiledClear.result, "base64"));
+      console.log("   ✅ Programs compiled successfully\n");
+    } catch (error) {
+      console.error("   ❌ Failed to compile TEAL programs:", error);
+      throw error;
+    }
     
     // Step 3: Get suggested transaction parameters
     console.log("3. Preparing deployment transaction...");
