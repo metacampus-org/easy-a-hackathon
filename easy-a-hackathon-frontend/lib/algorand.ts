@@ -1,7 +1,4 @@
 import algosdk from "algosdk"
-import fs from "fs"
-import path from "path"
-const crypto = require("crypto")
 
 // Lora network testnet configuration
 const ALGORAND_SERVER = "https://testnet-api.4160.nodely.dev"
@@ -15,7 +12,9 @@ export const algodClient = new algosdk.Algodv2(ALGORAND_TOKEN, ALGORAND_SERVER, 
 let contractABI: any = null
 try {
   if (typeof window === 'undefined') {
-    // Server-side: load from file system
+    // Server-side: load from file system using dynamic imports
+    const fs = require("fs")
+    const path = require("path")
     const abiPath = path.join(process.cwd(), "teal", "contract.json")
     if (fs.existsSync(abiPath)) {
       const abiContent = fs.readFileSync(abiPath, "utf8")
@@ -282,6 +281,18 @@ export class AlgorandService {
     })
 
     // Create SHA-256 hash of badge data
-    return crypto.createHash("sha256").update(badgeData).digest("hex")
+    if (typeof window !== 'undefined') {
+      // Browser environment - use Web Crypto API
+      const encoder = new TextEncoder()
+      const data = encoder.encode(badgeData)
+      return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+        const hashArray = Array.from(new Uint8Array(hashBuffer))
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+      }) as any // Return promise in browser
+    } else {
+      // Node.js environment
+      const crypto = require('crypto')
+      return crypto.createHash("sha256").update(badgeData).digest("hex")
+    }
   }
 }
