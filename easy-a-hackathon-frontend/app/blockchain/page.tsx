@@ -3,27 +3,11 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, ArrowLeft, Blocks, Award, Users, TrendingUp } from "lucide-react"
-import { WalletConnect } from "@/components/wallet-connect"
 import { TransactionHistory } from "@/components/transaction-history"
 
 export default function BlockchainDashboard() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Link>
-            <div className="flex items-center space-x-2">
-              <Shield className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold text-foreground">Blockchain Operations</h1>
-            </div>
-          </div>
-        </div>
-      </header>
 
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
@@ -77,10 +61,6 @@ export default function BlockchainDashboard() {
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Wallet Connection */}
-          <div>
-            <WalletConnect />
-          </div>
 
           {/* Smart Contract Info */}
           <Card className="border-border">
