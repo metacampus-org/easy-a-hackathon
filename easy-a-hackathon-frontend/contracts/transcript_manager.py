@@ -34,39 +34,6 @@ def approval_program() -> Expr:
         Return(Int(1))
     ])
     
-<<<<<<< HEAD
-    # Student onboarding operation
-    on_onboard_student = Seq([
-        # Verify the caller is authorized (institution admin)
-        Assert(
-            And(
-                Txn.sender() == Global.creator_address(),
-                Txn.application_args.length() == Int(2)
-            )
-        ),
-        
-        # Verify student hash doesn't already exist
-        Assert(
-            App.globalGet(Concat(student_hash_key, Txn.application_args[1])) == Int(0)
-        ),
-        
-        # Store student record in box storage for larger data
-        App.box_put(
-            Concat(student_hash_key, Txn.application_args[1]),
-            Txn.application_args[1]
-        ),
-        
-        # Increment total student count
-        App.globalPut(
-            Bytes("total_students"),
-            App.globalGet(Bytes("total_students")) + Int(1)
-        ),
-        
-        # Set timestamp using box storage for audit trail
-        App.box_put(
-            Concat(last_updated_key, Txn.application_args[1]),
-            Itob(Global.latest_timestamp())
-=======
     # Create badge request operation
     on_create_badge_request = Seq([
         # Extract badge request data from application arguments
@@ -112,7 +79,6 @@ def approval_program() -> Expr:
         App.globalPut(
             Concat(Bytes("approved_at"), Txn.application_args[1]),
             Global.latest_timestamp()
->>>>>>> bd4644f51370fddfbec2924ffeb18dfd08d3dcb1
         ),
         
         Return(Int(1))
