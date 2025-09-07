@@ -7,6 +7,16 @@ declare global {
         accounts: Array<{ address: string }>;
       }>;
     };
+    lute?: {
+      connect: () => Promise<{
+        accounts: string[];
+      }>;
+    };
+    LuteWallet?: {
+      connect: () => Promise<{
+        accounts: string[];
+      }>;
+    };
   }
 }
 

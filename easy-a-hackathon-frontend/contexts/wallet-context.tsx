@@ -31,8 +31,19 @@ const detectExodusWallet = () => {
 };
 
 const detectLuteWallet = () => {
-  // Lute wallet injects itself as window.algorand with isLute property
-  return typeof window !== 'undefined' && window.algorand && (window as any).algorand.isLute;
+  // Check multiple possible injection points for Lute wallet
+  if (typeof window === 'undefined') return false;
+  
+  // Check if Lute injects as window.lute
+  if ((window as any).lute) return true;
+  
+  // Check if Lute injects as window.algorand with isLute
+  if (window.algorand && (window as any).algorand.isLute) return true;
+  
+  // Check if Lute injects as window.LuteWallet
+  if ((window as any).LuteWallet) return true;
+  
+  return false;
 };
 
 interface WalletProviderProps {
@@ -128,6 +139,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
       } else if (provider === "lute") {
         console.log("Attempting to connect to Lute wallet")
         console.log("Lute detection result:", detectLuteWallet())
+        console.log("Window.lute:", typeof window !== 'undefined' ? (window as any).lute : 'undefined')
+        console.log("Window.LuteWallet:", typeof window !== 'undefined' ? (window as any).LuteWallet : 'undefined')
         console.log("Window.algorand:", typeof window !== 'undefined' ? window.algorand : 'undefined')
         
         if (!detectLuteWallet()) {
@@ -136,11 +149,21 @@ export function WalletProvider({ children }: WalletProviderProps) {
           return;
         }
         try {
-          // Lute wallet uses the same window.algorand.connect() API
-          const response = await (window as any).algorand.connect()
+          let response;
+          // Try different connection methods based on what's available
+          if ((window as any).lute && (window as any).lute.connect) {
+            response = await (window as any).lute.connect()
+          } else if ((window as any).LuteWallet && (window as any).LuteWallet.connect) {
+            response = await (window as any).LuteWallet.connect()
+          } else if (window.algorand && (window as any).algorand.isLute) {
+            response = await (window as any).algorand.connect()
+          } else {
+            throw new Error("No valid Lute wallet connection method found")
+          }
+          
           console.log("Lute connection response:", response)
           if (response && response.accounts && response.accounts.length > 0) {
-            accounts = response.accounts.map((acc: any) => acc.address)
+            accounts = Array.isArray(response.accounts[0]) ? response.accounts : response.accounts.map((acc: any) => acc.address || acc)
           }
         } catch (error) {
           console.error("Lute wallet connection failed:", error)
