@@ -1,8 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { CurriculumCourse } from "@/lib/curriculum-api"
 
-// Mock database - in production, this would connect to your actual database
-const courses: CurriculumCourse[] = [
+import coursesData from '@/data/json/courses.json'
+
+// Use imported courses data
+const courses: CurriculumCourse[] = coursesData.courses as CurriculumCourse[] || [
   {
     id: "1",
     code: "CS101",

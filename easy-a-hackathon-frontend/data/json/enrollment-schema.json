@@ -1,0 +1,11 @@
+{
+  "enrollmentSchema": {
+    "studentId": "string",
+    "courseId": "string",
+    "enrollmentDate": "string",
+    "status": ["enrolled", "completed", "withdrawn", "failed"],
+    "finalGrade": "number",
+    "completionDate": "string",
+    "transcriptVerified": "boolean"
+  }
+}

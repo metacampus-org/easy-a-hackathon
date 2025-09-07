@@ -1,0 +1,78 @@
+{
+  "courses": [
+    {
+      "id": "1",
+      "code": "CS101",
+      "name": "Introduction to Computer Science",
+      "description": "An introductory course covering basic programming concepts and problem-solving techniques.",
+      "credits": 3,
+      "department": "Computer Science",
+      "instructor": "Dr. Smith",
+      "semester": "Fall 2024",
+      "prerequisites": [],
+      "learningObjectives": [
+        {
+          "id": "1",
+          "courseId": "1",
+          "objective": "Understand fundamental programming concepts",
+          "category": "knowledge",
+          "assessmentMethod": "Written exam and programming assignments",
+          "proficiencyLevel": "beginner",
+          "bloomsTaxonomy": "Understanding"
+        },
+        {
+          "id": "2",
+          "courseId": "1",
+          "objective": "Apply problem-solving techniques using algorithms",
+          "category": "application",
+          "assessmentMethod": "Programming projects",
+          "proficiencyLevel": "intermediate",
+          "bloomsTaxonomy": "Application"
+        }
+      ],
+      "assessmentMethods": [
+        "Exams",
+        "Programming Assignments",
+        "Projects"
+      ],
+      "gradingCriteria": [
+        {
+          "id": "1",
+          "name": "Exams",
+          "weight": 40,
+          "description": "Midterm and final examinations",
+          "passingGrade": 70
+        },
+        {
+          "id": "2",
+          "name": "Assignments",
+          "weight": 35,
+          "description": "Programming assignments and homework",
+          "passingGrade": 70
+        },
+        {
+          "id": "3",
+          "name": "Projects",
+          "weight": 25,
+          "description": "Final project and lab work",
+          "passingGrade": 70
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Calculus II",
+      "code": "MATH201",
+      "instructor": "Prof. Johnson",
+      "department": "Mathematics",
+      "credits": 4,
+      "semester": "Fall 2024",
+      "learningOutcomes": [
+        "Apply integration techniques to solve complex problems",
+        "Understand sequences and series convergence",
+        "Solve differential equations using various methods"
+      ],
+      "description": "Advanced calculus covering integration techniques, sequences, series, and differential equations."
+    }
+  ]
+}

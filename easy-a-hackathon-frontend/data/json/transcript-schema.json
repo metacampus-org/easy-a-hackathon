@@ -1,0 +1,26 @@
+{
+  "transcriptSchema": {
+    "studentHash": "string",
+    "courses": [
+      {
+        "courseId": "string",
+        "courseName": "string",
+        "courseCode": "string",
+        "credits": "number",
+        "semester": "string",
+        "year": "number",
+        "grade": "string",
+        "gradePoints": "number",
+        "instructor": "string",
+        "department": "string",
+        "completionDate": "string"
+      }
+    ],
+    "gpa": "number",
+    "totalCredits": "number",
+    "degreeProgram": "string",
+    "graduationDate": "string",
+    "honors": "string[]",
+    "lastUpdated": "number"
+  }
+}

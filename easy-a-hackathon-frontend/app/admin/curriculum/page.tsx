@@ -34,8 +34,8 @@ export default function CurriculumManagement() {
   const [isAddingCourse, setIsAddingCourse] = useState(false)
   const [editingCourse, setEditingCourse] = useState<string | null>(null)
 
-  // Mock courses data
-  const [courses, setCourses] = useState<Course[]>([
+  // Import courses from JSON
+  const [courses, setCourses] = useState<Course[]>(coursesData.courses as Course[] || [
     {
       id: "1",
       name: "Introduction to Computer Science",
