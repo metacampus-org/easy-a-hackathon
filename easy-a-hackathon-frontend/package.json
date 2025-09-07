@@ -12,6 +12,7 @@
     "debug:blockchain": "tsx test/blockchain-debug.ts"
   },
   "dependencies": {
+    "@blockshake/defly-connect": "^1.2.1",
     "@hookform/resolvers": "^3.10.0",
     "@perawallet/connect": "^1.4.2",
     "@radix-ui/react-accordion": "1.2.2",

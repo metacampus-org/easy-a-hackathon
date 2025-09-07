@@ -1,3 +1,8 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useWallet } from "@/contexts/wallet-context"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -5,37 +10,33 @@ import { Badge } from "@/components/ui/badge"
 import { Shield, GraduationCap, Users, BookOpen, Zap, Lock, User, Eye } from "lucide-react"
 
 export default function HomePage() {
+  const { isConnected, userRole } = useWallet()
+  const router = useRouter()
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isClient) return
+    if (isConnected && userRole) {
+      if (userRole === "admin") {
+        router.push("/admin")
+      } else {
+        router.push("/student")
+      }
+    }
+  }, [isConnected, userRole, router, isClient])
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">Student Transcript Management</h1>
-            <Badge variant="secondary" className="ml-2">
-              Algorand Blockchain
-            </Badge>
-          </div>
-          <nav className="flex items-center space-x-4">
-            <Link href="/student" className="text-muted-foreground hover:text-foreground">
-              Student Portal
-            </Link>
-            <Link href="/admin/transcript" className="text-muted-foreground hover:text-foreground">
-              College Admin
-            </Link>
-            <Link href="/verify" className="text-muted-foreground hover:text-foreground">
-              Verify Transcript
-            </Link>
-          </nav>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
           <h2 className="text-5xl font-bold text-foreground mb-6 text-balance">
-            Decentralized Student Transcript Management on Algorand
+            MetaCAMPUS - Decentralized Academic Records
           </h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto text-pretty">
             Secure, transparent, and immutable student academic records powered by Algorand blockchain technology. 
@@ -45,13 +46,13 @@ export default function HomePage() {
             <Link href="/student">
               <Button size="lg" className="text-lg px-8">
                 <User className="mr-2 h-5 w-5" />
-                View My Transcript
+                Student Portal
               </Button>
             </Link>
-            <Link href="/verify">
+            <Link href="/admin">
               <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent">
-                <Eye className="mr-2 h-5 w-5" />
-                Verify Student Records
+                <GraduationCap className="mr-2 h-5 w-5" />
+                University Portal
               </Button>
             </Link>
           </div>
@@ -253,41 +254,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Technology Section */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto text-center">
-          <h3 className="text-3xl font-bold mb-8 text-foreground">Powered by Algorand</h3>
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-8">
-              <Card className="border-border text-left">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span>Sustainable & Fast</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Algorand's pure proof-of-stake consensus uses minimal energy while processing 
-                    transactions in under 5 seconds with instant finality.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-              
-              <Card className="border-border text-left">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span>Low Cost & Secure</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Minimal transaction fees make blockchain storage affordable while maintaining 
-                    enterprise-grade security and immutability.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="bg-card border-t border-border py-12 px-4">

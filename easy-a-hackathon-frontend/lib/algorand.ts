@@ -1,6 +1,4 @@
 import algosdk from "algosdk"
-import fs from "fs"
-import path from "path"
 const crypto = require("crypto")
 
 // Lora network testnet configuration
@@ -11,24 +9,30 @@ const ALGORAND_TOKEN = ""
 // Initialize Algorand client
 export const algodClient = new algosdk.Algodv2(ALGORAND_TOKEN, ALGORAND_SERVER, ALGORAND_PORT)
 
-// Load ABI specification
+// Load ABI specification (server-side only)
 let contractABI: any = null
-try {
-  if (typeof window === 'undefined') {
-    // Server-side: load from file system
-    const abiPath = path.join(process.cwd(), "teal", "contract.json")
-    if (fs.existsSync(abiPath)) {
-      const abiContent = fs.readFileSync(abiPath, "utf8")
-      contractABI = JSON.parse(abiContent)
+
+async function loadContractABI() {
+  if (typeof window === 'undefined' && !contractABI) {
+    try {
+      const fs = await import("fs")
+      const path = await import("path")
+      const abiPath = path.join(process.cwd(), "teal", "contract.json")
+      if (fs.existsSync(abiPath)) {
+        const abiContent = fs.readFileSync(abiPath, "utf8")
+        contractABI = JSON.parse(abiContent)
+      }
+    } catch (error) {
+      console.warn("Could not load contract ABI:", error)
     }
   }
-} catch (error) {
-  console.warn("Could not load contract ABI:", error)
+  return contractABI
 }
 
 // Smart contract application ID (will be set after deployment)
-export const METACAMPUS_APP_ID = contractABI?.networks?.["lora-testnet"]?.appID || 
-  (process.env.NEXT_PUBLIC_ALGORAND_APP_ID ? Number.parseInt(process.env.NEXT_PUBLIC_ALGORAND_APP_ID) : 0)
+export const METACAMPUS_APP_ID = process.env.NEXT_PUBLIC_ALGORAND_APP_ID 
+  ? Number.parseInt(process.env.NEXT_PUBLIC_ALGORAND_APP_ID) 
+  : 0
 
 // Badge smart contract interface
 export interface BadgeRequest {
@@ -52,8 +56,8 @@ export interface MetaBadge {
 // Utility functions for Algorand operations
 export class AlgorandService {
   // Get contract ABI for method calls
-  static getContractABI() {
-    return contractABI
+  static async getContractABI() {
+    return await loadContractABI()
   }
 
   // Create ATC (Atomic Transaction Composer) for ABI method calls
@@ -80,7 +84,8 @@ export class AlgorandService {
 
   static async createBadgeRequest(request: BadgeRequest, senderAccount: algosdk.Account) {
     try {
-      if (!contractABI) {
+      const abi = await loadContractABI()
+      if (!abi) {
         throw new Error("Contract ABI not loaded")
       }
 
@@ -90,7 +95,7 @@ export class AlgorandService {
       // Use ABI method call
       atc.addMethodCall({
         appID: METACAMPUS_APP_ID,
-        method: algosdk.getMethodByName(contractABI.methods, "create_badge_request"),
+        method: algosdk.getMethodByName(abi.methods, "create_badge_request"),
         methodArgs: [
           request.studentId,
           request.courseId,
@@ -111,7 +116,8 @@ export class AlgorandService {
 
   static async approveBadgeRequest(requestId: string, adminAccount: algosdk.Account) {
     try {
-      if (!contractABI) {
+      const abi = await loadContractABI()
+      if (!abi) {
         throw new Error("Contract ABI not loaded")
       }
 
@@ -121,7 +127,7 @@ export class AlgorandService {
       // Use ABI method call
       atc.addMethodCall({
         appID: METACAMPUS_APP_ID,
-        method: algosdk.getMethodByName(contractABI.methods, "approve_badge_request"),
+        method: algosdk.getMethodByName(abi.methods, "approve_badge_request"),
         methodArgs: [requestId],
         sender: adminAccount.addr,
         suggestedParams,
@@ -142,8 +148,15 @@ export class AlgorandService {
         throw new Error("Smart contract not deployed. Please set NEXT_PUBLIC_ALGORAND_APP_ID environment variable.")
       }
 
-      if (!contractABI) {
-        throw new Error("Contract ABI not loaded")
+      // For client-side calls, skip ABI and go directly to state reading
+      if (typeof window !== 'undefined') {
+        return await this.verifyBadgeFromState(badgeHash, studentId)
+      }
+
+      const abi = await loadContractABI()
+      if (!abi) {
+        console.warn("Contract ABI not loaded, falling back to state reading")
+        return await this.verifyBadgeFromState(badgeHash, studentId)
       }
 
       const atc = new algosdk.AtomicTransactionComposer()
@@ -152,7 +165,7 @@ export class AlgorandService {
       // Use ABI method call for verification (read-only)
       atc.addMethodCall({
         appID: METACAMPUS_APP_ID,
-        method: algosdk.getMethodByName(contractABI.methods, "verify_badge"),
+        method: algosdk.getMethodByName(abi.methods, "verify_badge"),
         methodArgs: [badgeHash, studentId],
         sender: algosdk.getApplicationAddress(METACAMPUS_APP_ID), // Use app address for read-only calls
         suggestedParams,
@@ -174,6 +187,15 @@ export class AlgorandService {
         console.warn("ABI call failed, falling back to state reading:", error)
       }
 
+      return await this.verifyBadgeFromState(badgeHash, studentId)
+    } catch (error) {
+      console.error("Error verifying badge:", error)
+      throw error
+    }
+  }
+
+  private static async verifyBadgeFromState(badgeHash: string, studentId: string): Promise<{ verified: boolean; badge?: MetaBadge }> {
+    try {
       // Fallback: Read global state directly
       const appInfo = await algodClient.getApplicationByID(METACAMPUS_APP_ID).do()
       const globalState = appInfo.params["global-state"]
@@ -202,8 +224,8 @@ export class AlgorandService {
 
       return { verified: false }
     } catch (error) {
-      console.error("Error verifying badge:", error)
-      throw error
+      console.error("Error reading badge state:", error)
+      return { verified: false }
     }
   }
 

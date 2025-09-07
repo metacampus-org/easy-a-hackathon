@@ -6,8 +6,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { History, ExternalLink, RefreshCw, Award, CheckCircle, Clock, XCircle } from "lucide-react"
-import { BlockchainService } from "@/lib/blockchain-service"
-import type { Transaction } from "@/lib/wallet"
+// Transaction interface
+interface Transaction {
+  id: string
+  txId: string
+  type: "badge_request" | "badge_approval" | "badge_mint" | "verification"
+  status: "pending" | "confirmed" | "failed"
+  timestamp: string
+}
 
 export function TransactionHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -18,8 +24,8 @@ export function TransactionHistory() {
   }, [])
 
   const loadTransactions = () => {
-    const history = BlockchainService.getTransactionHistory()
-    setTransactions(history)
+    // Return empty array since we removed the blockchain service
+    setTransactions([])
   }
 
   const handleRefresh = async () => {
