@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useWallet } from "@/contexts/wallet-context"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -80,10 +81,10 @@ export default function CollegeAdminPage() {
     completionDate: ""
   })
 
-  const walletState = TranscriptService.getWalletState()
+  const { isConnected, accountAddress } = useWallet()
 
   const handleOnboardStudent = async () => {
-    if (!walletState.isConnected) {
+    if (!isConnected) {
       toast({
         title: "Wallet Required",
         description: "Please connect your wallet to onboard students.",
@@ -114,7 +115,7 @@ export default function CollegeAdminPage() {
           id: "UNIV001",
           name: "University College"
         },
-        walletState.address!
+        accountAddress!
       )
 
       setStudentHash(result.studentHash)
@@ -192,7 +193,7 @@ export default function CollegeAdminPage() {
   }
 
   const handleUpdateTranscript = async () => {
-    if (!walletState.isConnected) {
+    if (!isConnected) {
       toast({
         title: "Wallet Required",
         description: "Please connect your wallet to update transcripts.",
@@ -230,7 +231,7 @@ export default function CollegeAdminPage() {
       const result = await TranscriptService.updateTranscript(
         searchStudentHash,
         courseRecords,
-        walletState.address!
+        accountAddress!
       )
 
       toast({
@@ -355,7 +356,7 @@ export default function CollegeAdminPage() {
                 <div className="flex justify-end">
                   <Button 
                     onClick={handleOnboardStudent} 
-                    disabled={isLoading || !walletState.isConnected}
+                    disabled={isLoading || !isConnected}
                     className="min-w-[200px]"
                   >
                     {isLoading ? "Onboarding..." : "Onboard Student"}
@@ -620,7 +621,7 @@ export default function CollegeAdminPage() {
                   <div className="flex justify-end mt-6">
                     <Button 
                       onClick={handleUpdateTranscript}
-                      disabled={isLoading || !walletState.isConnected || !searchStudentHash}
+                      disabled={isLoading || !isConnected || !searchStudentHash}
                       className="min-w-[200px]"
                     >
                       {isLoading ? "Updating..." : "Update Transcript on Blockchain"}

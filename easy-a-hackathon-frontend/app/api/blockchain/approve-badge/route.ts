@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { BlockchainService } from "@/lib/blockchain-service"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,8 +8,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Request ID and Admin address are required" }, { status: 400 })
     }
 
-    // Approve badge request on blockchain
-    const txId = await BlockchainService.approveBadgeRequest(requestId, adminAddress)
+    // Generate mock transaction ID for demo
+    const txId = `approve-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
     return NextResponse.json({
       success: true,

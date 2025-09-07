@@ -1,6 +1,5 @@
 import algosdk from "algosdk"
 import { algodClient } from "./algorand"
-import { WalletService } from "./wallet"
 
 // Transcript Data Interfaces
 export interface StudentRecord {
@@ -69,7 +68,6 @@ export const TRANSCRIPT_APP_ID = process.env.NEXT_PUBLIC_TRANSCRIPT_APP_ID
   : 0
 
 export class TranscriptService {
-  private static walletService = WalletService.getInstance()
 
   // Generate unique student hash
   static generateStudentHash(personalInfo: StudentRecord['personalInfo'], institutionId: string): string {
@@ -111,8 +109,7 @@ export class TranscriptService {
     signerAddress: string
   ): Promise<{ txId: string; studentHash: string }> {
     try {
-      const walletState = this.walletService.getWalletState()
-      if (!walletState.isConnected) {
+      if (!signerAddress) {
         throw new Error("Wallet not connected")
       }
 
@@ -148,14 +145,6 @@ export class TranscriptService {
       // For demo purposes - in production this would be signed by connected wallet
       const txId = appCallTxn.txID()
 
-      // Record transaction
-      this.walletService.addTransaction({
-        type: "student_onboard",
-        status: "pending",
-        txId,
-        details: { studentHash, institutionId: institutionInfo.id }
-      })
-
       return { txId, studentHash }
     } catch (error) {
       console.error("Error onboarding student:", error)
@@ -170,8 +159,7 @@ export class TranscriptService {
     signerAddress: string
   ): Promise<{ txId: string; transcriptHash: string }> {
     try {
-      const walletState = this.walletService.getWalletState()
-      if (!walletState.isConnected) {
+      if (!signerAddress) {
         throw new Error("Wallet not connected")
       }
 
@@ -208,14 +196,6 @@ export class TranscriptService {
 
       // For demo purposes - in production this would be signed by connected wallet
       const txId = appCallTxn.txID()
-
-      // Record transaction
-      this.walletService.addTransaction({
-        type: "transcript_update",
-        status: "pending",
-        txId,
-        details: { studentHash, transcriptHash, coursesCount: courses.length }
-      })
 
       return { txId, transcriptHash }
     } catch (error) {
@@ -312,13 +292,7 @@ export class TranscriptService {
           totalCredits: transcriptData.totalCredits
         }
 
-        // Record verification transaction
-        this.walletService.addTransaction({
-          type: "transcript_verify",
-          status: "confirmed",
-          txId: `verify-${Date.now()}`,
-          details: { studentHash, transcriptHash }
-        })
+        // Verification completed successfully
 
         console.log("✅ Verification completed successfully:", verificationResult)
         return verificationResult
@@ -423,9 +397,8 @@ export class TranscriptService {
 
   // Get all transactions related to transcripts
   static getTranscriptTransactions(): any[] {
-    return this.walletService.getTransactions().filter(tx => 
-      ['student_onboard', 'transcript_update', 'transcript_verify'].includes(tx.type)
-    )
+    // Return empty array since we removed the wallet service
+    return []
   }
 
   // Calculate grade points from letter grade
@@ -461,18 +434,5 @@ export class TranscriptService {
     }
   }
 
-  // Get wallet connection status
-  static getWalletState() {
-    return this.walletService.getWalletState()
-  }
-
-  // Connect wallet
-  static async connectWallet(provider: "pera" | "myalgo" | "walletconnect"): Promise<boolean> {
-    return await this.walletService.connectWallet(provider)
-  }
-
-  // Disconnect wallet
-  static async disconnectWallet(): Promise<void> {
-    await this.walletService.disconnectWallet()
-  }
+  // Wallet methods removed - use the global WalletContext instead
 }

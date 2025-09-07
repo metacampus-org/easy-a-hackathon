@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { BlockchainService } from "@/lib/blockchain-service"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,8 +8,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Student ID and Course ID are required" }, { status: 400 })
     }
 
-    // Submit badge request to blockchain
-    const txId = await BlockchainService.submitBadgeRequest(studentId, courseId, additionalInfo)
+    // Generate mock transaction ID for demo
+    const txId = `request-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
     return NextResponse.json({
       success: true,
