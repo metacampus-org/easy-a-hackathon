@@ -1,0 +1,112 @@
+#pragma version 8
+txn ApplicationID
+int 0
+==
+bnz main_l10
+txna ApplicationArgs 0
+byte "create_badge_request"
+==
+bnz main_l9
+txna ApplicationArgs 0
+byte "approve_badge_request"
+==
+bnz main_l8
+txna ApplicationArgs 0
+byte "create_meta_badge"
+==
+bnz main_l7
+txna ApplicationArgs 0
+byte "verify_badge"
+==
+bnz main_l6
+err
+main_l6:
+txn NumAppArgs
+int 2
+==
+assert
+int 1
+return
+main_l7:
+txn Sender
+global CreatorAddress
+==
+assert
+txn NumAppArgs
+int 2
+==
+assert
+byte "badge_data"
+txna ApplicationArgs 1
+concat
+txna ApplicationArgs 1
+app_global_put
+byte "timestamp"
+txna ApplicationArgs 1
+concat
+global LatestTimestamp
+app_global_put
+byte "total_badges"
+byte "total_badges"
+app_global_get
+int 1
++
+app_global_put
+int 1
+return
+main_l8:
+txn Sender
+global CreatorAddress
+==
+assert
+txn NumAppArgs
+int 2
+==
+assert
+byte "approved"
+txna ApplicationArgs 1
+concat
+byte "approved"
+app_global_put
+byte "approved_at"
+txna ApplicationArgs 1
+concat
+global LatestTimestamp
+app_global_put
+int 1
+return
+main_l9:
+txn NumAppArgs
+int 2
+==
+assert
+byte "badge_request"
+txna ApplicationArgs 1
+concat
+txna ApplicationArgs 1
+app_global_put
+byte "timestamp"
+txna ApplicationArgs 1
+concat
+global LatestTimestamp
+app_global_put
+byte "total_requests"
+byte "total_requests"
+app_global_get
+int 1
++
+app_global_put
+int 1
+return
+main_l10:
+byte "contract_version"
+byte "2.0"
+app_global_put
+byte "total_badges"
+int 0
+app_global_put
+byte "total_requests"
+int 0
+app_global_put
+int 1
+return

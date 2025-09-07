@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { BlockchainService } from "@/lib/blockchain-service"
+import { AlgorandService } from "@/lib/algorand"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Badge hash and Student ID are required" }, { status: 400 })
     }
 
-    // Verify badge on blockchain
-    const verificationResult = await BlockchainService.verifyBadge(badgeHash, studentId)
+    // Verify badge on blockchain using AlgorandService
+    const verificationResult = await AlgorandService.verifyBadge(badgeHash, studentId)
 
     return NextResponse.json({
       success: true,

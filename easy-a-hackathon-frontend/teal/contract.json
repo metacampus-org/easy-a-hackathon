@@ -1,0 +1,67 @@
+{
+  "name": "MetaCAMPUSBadgeManager",
+  "description": "Smart contract for managing student badges and academic credentials",
+  "methods": [
+    {
+      "name": "create_badge_request",
+      "args": [
+        {
+          "type": "string",
+          "name": "request_data",
+          "desc": "JSON string containing badge request data"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      },
+      "desc": "Create a new badge request"
+    },
+    {
+      "name": "approve_badge_request",
+      "args": [
+        {
+          "type": "string",
+          "name": "request_id",
+          "desc": "ID of the request to approve"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      },
+      "desc": "Approve a badge request (admin only)"
+    },
+    {
+      "name": "create_meta_badge",
+      "args": [
+        {
+          "type": "string",
+          "name": "badge_data",
+          "desc": "JSON string containing badge data"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      },
+      "desc": "Create/mint a new badge (admin only)"
+    },
+    {
+      "name": "verify_badge",
+      "args": [
+        {
+          "type": "string",
+          "name": "badge_hash",
+          "desc": "Hash of the badge to verify"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      },
+      "desc": "Verify a badge exists (read-only)"
+    }
+  ],
+  "networks": {
+    "lora-testnet": {
+      "appID": 0
+    }
+  }
+}

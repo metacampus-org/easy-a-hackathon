@@ -55,7 +55,12 @@
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
     "next-themes": "^0.4.6",
+<<<<<<< HEAD
     "react": "^18.2.0",
+=======
+    "node-fetch": "^3.3.2",
+    "react": "^19",
+>>>>>>> bd4644f51370fddfbec2924ffeb18dfd08d3dcb1
     "react-day-picker": "9.8.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.60.0",
