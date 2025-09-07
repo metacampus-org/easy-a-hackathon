@@ -139,7 +139,7 @@ export function WalletConnect() {
             Pera Wallet
           </Button>
 
-          <Button
+          {/* <Button
             onClick={() => handleConnect("myalgo")}
             disabled={isConnecting}
             className="w-full justify-start"
@@ -147,9 +147,9 @@ export function WalletConnect() {
           >
             <div className="w-6 h-6 bg-purple-500 rounded mr-3" />
             MyAlgo Wallet
-          </Button>
+          </Button> */}
 
-          <Button
+          {/* <Button
             onClick={() => handleConnect("walletconnect")}
             disabled={isConnecting}
             className="w-full justify-start"
@@ -157,7 +157,7 @@ export function WalletConnect() {
           >
             <div className="w-6 h-6 bg-orange-500 rounded mr-3" />
             WalletConnect
-          </Button>
+          </Button> */}
         </div>
 
         {isConnecting && (
