@@ -1,4 +1,5 @@
 import type algosdk from "algosdk"
+import { PeraWalletConnect } from "@perawallet/connect"
 
 export interface WalletState {
   isConnected: boolean
@@ -9,7 +10,7 @@ export interface WalletState {
 
 export interface Transaction {
   id: string
-  type: "badge_request" | "badge_approval" | "badge_mint" | "verification"
+  type: "badge_request" | "badge_approval" | "badge_mint" | "verification" | "student_onboard" | "transcript_update" | "transcript_verify"
   status: "pending" | "confirmed" | "failed"
   txId: string
   timestamp: string
@@ -18,12 +19,17 @@ export interface Transaction {
     courseId?: string
     badgeHash?: string
     amount?: number
+    studentHash?: string
+    institutionId?: string
+    transcriptHash?: string
+    coursesCount?: number
   }
 }
 
 // Wallet Management Service
 export class WalletService {
   private static instance: WalletService
+  private peraWallet: PeraWalletConnect
   private walletState: WalletState = {
     isConnected: false,
     address: null,
@@ -31,6 +37,12 @@ export class WalletService {
     provider: null,
   }
   private transactions: Transaction[] = []
+
+  constructor() {
+    this.peraWallet = new PeraWalletConnect({
+      shouldShowSignTxnToast: false,
+    })
+  }
 
   static getInstance(): WalletService {
     if (!WalletService.instance) {
@@ -60,18 +72,28 @@ export class WalletService {
 
   private async connectPera(): Promise<boolean> {
     try {
-      // Mock Pera Wallet connection
-      // In production, this would use @perawallet/connect
-      const mockAddress = "PERA7XVLKAG5YXID47PSDN5IKBCXPPVE4KLXFEYNYFU7SFEWJJQ4B5Q"
+      // Connect to Pera Wallet
+      const accounts = await this.peraWallet.connect()
+      
+      if (accounts && accounts.length > 0) {
+        const address = accounts[0]
+        
+        this.walletState = {
+          isConnected: true,
+          address: address,
+          balance: 1000000, // Mock balance - in production, fetch from Algorand
+          provider: "pera",
+        }
 
-      this.walletState = {
-        isConnected: true,
-        address: mockAddress,
-        balance: 1000000, // 1 ALGO in microAlgos
-        provider: "pera",
+        // Set up event listeners
+        this.peraWallet.connector?.on("disconnect", () => {
+          this.disconnectWallet()
+        })
+
+        return true
       }
-
-      return true
+      
+      return false
     } catch (error) {
       console.error("Pera wallet connection failed:", error)
       return false
@@ -80,8 +102,8 @@ export class WalletService {
 
   private async connectMyAlgo(): Promise<boolean> {
     try {
-      // Mock MyAlgo connection
-      // In production, this would use @randlabs/myalgo-connect
+      // Mock MyAlgo connection for demo
+      // In production, use @randlabs/myalgo-connect
       const mockAddress = "MYALGO7XVLKAG5YXID47PSDN5IKBCXPPVE4KLXFEYNYFU7SFEWJJQ4B5Q"
 
       this.walletState = {
@@ -100,8 +122,8 @@ export class WalletService {
 
   private async connectWalletConnect(): Promise<boolean> {
     try {
-      // Mock WalletConnect connection
-      // In production, this would use @walletconnect/client
+      // Mock WalletConnect connection for demo
+      // In production, use @walletconnect/client v2
       const mockAddress = "WC7XVLKAG5YXID47PSDN5IKBCXPPVE4KLXFEYNYFU7SFEWJJQ4B5Q"
 
       this.walletState = {
@@ -119,11 +141,27 @@ export class WalletService {
   }
 
   async disconnectWallet(): Promise<void> {
-    this.walletState = {
-      isConnected: false,
-      address: null,
-      balance: 0,
-      provider: null,
+    try {
+      // Disconnect from Pera Wallet if connected
+      if (this.walletState.provider === "pera") {
+        await this.peraWallet.disconnect()
+      }
+      
+      this.walletState = {
+        isConnected: false,
+        address: null,
+        balance: 0,
+        provider: null,
+      }
+    } catch (error) {
+      console.error("Error disconnecting wallet:", error)
+      // Force disconnect even if there's an error
+      this.walletState = {
+        isConnected: false,
+        address: null,
+        balance: 0,
+        provider: null,
+      }
     }
   }
 
@@ -138,10 +176,18 @@ export class WalletService {
     }
 
     try {
-      // Mock transaction signing
-      // In production, this would use the actual wallet provider's signing method
-      const mockSignedTxn = new Uint8Array(64) // Mock signature
-      return mockSignedTxn
+      if (this.walletState.provider === "pera") {
+        // Use Pera Wallet to sign the transaction
+        const signedTxn = await this.peraWallet.signTransaction([[{
+          txn: txn,
+          signers: [this.walletState.address]
+        }]])
+        return signedTxn[0]
+      } else {
+        // Mock transaction signing for other wallets
+        const mockSignedTxn = new Uint8Array(64) // Mock signature
+        return mockSignedTxn
+      }
     } catch (error) {
       console.error("Error signing transaction:", error)
       throw error
@@ -166,5 +212,10 @@ export class WalletService {
     if (transaction) {
       transaction.status = status
     }
+  }
+
+  // Get Pera Wallet instance for direct access if needed
+  getPeraWallet(): PeraWalletConnect {
+    return this.peraWallet
   }
 }
