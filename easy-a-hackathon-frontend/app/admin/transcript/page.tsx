@@ -26,8 +26,8 @@ import {
   Download,
   Upload
 } from "lucide-react"
-import { transcriptService } from "@/lib/transcript-service"
-import { BadgeService } from "@/lib/badge-service"
+import { transcriptService, CourseRecord } from "@/lib/transcript-service"
+import { badgeService } from "@/lib/badge-service"
 import { fileStorageService } from "@/lib/file-storage-service"
 import { useToast } from "@/components/ui/use-toast"
 import { WalletButton } from "@/components/wallet-button"
@@ -36,7 +36,6 @@ interface OnboardStudentForm {
   firstName: string
   lastName: string
   dateOfBirth: string
-  nationalId: string
   degreeProgram: string
 }
 
@@ -72,7 +71,6 @@ export default function CollegeAdminPage() {
     firstName: "",
     lastName: "",
     dateOfBirth: "",
-    nationalId: "",
     degreeProgram: ""
   })
 
@@ -90,12 +88,12 @@ export default function CollegeAdminPage() {
     completionDate: ""
   })
 
-  const { isConnected, accountAddress } = useWallet()
+  const { isConnected, accountAddress, userRole } = useWallet()
 
   // Load badge requests on component mount
   const loadBadgeRequests = async () => {
     try {
-      const requests = await BadgeService.getAllBadgeRequests()
+      const requests = await badgeService.getAllBadgeRequests()
       setBadgeRequests(requests)
     } catch (error) {
       console.error("Error loading badge requests:", error)
@@ -111,11 +109,22 @@ export default function CollegeAdminPage() {
   }
 
   // Approve badge request with blockchain integration
-  const handleApproveBadgeRequest = async (requestId: string) => {
-    if (!isConnected || !accountAddress) {
+  const handleApproveBadge = async (requestId: string) => {
+    if (!accountAddress) {
       toast({
-        title: "Wallet Required",
-        description: "Please connect your wallet to approve badge requests.",
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to approve badges.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Check if user has admin role and is using the main admin wallet
+    const MAIN_ADMIN_WALLET = "N4HTLJPU5CSTE475XZ42LHWPVTTR4S2L35Y2YD4VFM6V4DUJPMCWFMTNF4";
+    if (accountAddress !== MAIN_ADMIN_WALLET) {
+      toast({
+        title: "Access Denied",
+        description: "Only the main university administrator wallet can approve badge requests.",
         variant: "destructive"
       })
       return
@@ -126,9 +135,10 @@ export default function CollegeAdminPage() {
       console.log("🎓 STARTING BADGE APPROVAL PROCESS")
       console.log("Request ID:", requestId)
       console.log("Admin Wallet:", accountAddress)
+      console.log("Admin Role:", userRole)
       console.log("Timestamp:", new Date().toISOString())
 
-      const result = await BadgeService.approveBadgeRequest(requestId, accountAddress)
+      const result = await badgeService.approveBadgeRequest(requestId, accountAddress)
       
       console.log("🏆 BADGE APPROVAL SUCCESS!")
       console.log("🔐 Badge Hash (ON-CHAIN):", result.badgeHash)
@@ -312,7 +322,7 @@ export default function CollegeAdminPage() {
       firstName: studentForm.firstName,
       lastName: studentForm.lastName,
       dateOfBirth: studentForm.dateOfBirth,
-      nationalId: studentForm.nationalId || "N/A",
+      nationalId: "",
       degreeProgram: studentForm.degreeProgram || "N/A"
     })
     console.log("Timestamp:", new Date().toISOString())
@@ -324,7 +334,7 @@ export default function CollegeAdminPage() {
           firstName: studentForm.firstName,
           lastName: studentForm.lastName,
           dateOfBirth: studentForm.dateOfBirth,
-          nationalId: studentForm.nationalId
+          nationalId: ""
         },
         {
           id: "UNIV001",
@@ -351,7 +361,6 @@ export default function CollegeAdminPage() {
         firstName: "",
         lastName: "",
         dateOfBirth: "",
-        nationalId: "",
         degreeProgram: ""
       })
 
@@ -382,7 +391,7 @@ export default function CollegeAdminPage() {
       return
     }
 
-    const gradePoints = TranscriptService.calculateGradePoints(courseForm.grade)
+    const gradePoints = transcriptService.calculateGradePoints(courseForm.grade)
     const newCourse: CourseForm = {
       ...courseForm,
       gradePoints
@@ -550,65 +559,94 @@ export default function CollegeAdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name *</Label>
-                      <Input
-                        id="firstName"
-                        placeholder="Enter first name"
-                        value={studentForm.firstName}
-                        onChange={(e) => setStudentForm({...studentForm, firstName: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name *</Label>
-                      <Input
-                        id="lastName"
-                        placeholder="Enter last name"
-                        value={studentForm.lastName}
-                        onChange={(e) => setStudentForm({...studentForm, lastName: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                      <Input
-                        id="dateOfBirth"
-                        type="date"
-                        value={studentForm.dateOfBirth}
-                        onChange={(e) => setStudentForm({...studentForm, dateOfBirth: e.target.value})}
-                      />
-                    </div>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <Label htmlFor="firstName">First Name *</Label>
+                    <Input
+                      id="firstName"
+                      placeholder="Enter first name"
+                      value={studentForm.firstName}
+                      onChange={(e) => setStudentForm({...studentForm, firstName: e.target.value})}
+                    />
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="nationalId">National ID</Label>
-                      <Input
-                        id="nationalId"
-                        placeholder="Enter national ID (optional)"
-                        value={studentForm.nationalId}
-                        onChange={(e) => setStudentForm({...studentForm, nationalId: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="degreeProgram">Degree Program</Label>
-                      <Select 
-                        value={studentForm.degreeProgram} 
-                        onValueChange={(value) => setStudentForm({...studentForm, degreeProgram: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select degree program" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="computer-science">Computer Science</SelectItem>
-                          <SelectItem value="mathematics">Mathematics</SelectItem>
-                          <SelectItem value="engineering">Engineering</SelectItem>
-                          <SelectItem value="business">Business Administration</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="lastName">Last Name *</Label>
+                    <Input
+                      id="lastName"
+                      placeholder="Enter last name"
+                      value={studentForm.lastName}
+                      onChange={(e) => setStudentForm({...studentForm, lastName: e.target.value})}
+                    />
                   </div>
+                  <div>
+                    <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={studentForm.dateOfBirth}
+                      onChange={(e) => setStudentForm({...studentForm, dateOfBirth: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="max-w-md">
+                  <Label htmlFor="degreeProgram">Degree Program</Label>
+                  <Select 
+                    value={studentForm.degreeProgram} 
+                    onValueChange={(value) => setStudentForm({...studentForm, degreeProgram: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select degree program" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="computer-science">Computer Science</SelectItem>
+                      <SelectItem value="software-engineering">Software Engineering</SelectItem>
+                      <SelectItem value="data-science">Data Science</SelectItem>
+                      <SelectItem value="cybersecurity">Cybersecurity</SelectItem>
+                      <SelectItem value="artificial-intelligence">Artificial Intelligence</SelectItem>
+                      <SelectItem value="mathematics">Mathematics</SelectItem>
+                      <SelectItem value="statistics">Statistics</SelectItem>
+                      <SelectItem value="physics">Physics</SelectItem>
+                      <SelectItem value="chemistry">Chemistry</SelectItem>
+                      <SelectItem value="biology">Biology</SelectItem>
+                      <SelectItem value="engineering">Engineering</SelectItem>
+                      <SelectItem value="mechanical-engineering">Mechanical Engineering</SelectItem>
+                      <SelectItem value="electrical-engineering">Electrical Engineering</SelectItem>
+                      <SelectItem value="civil-engineering">Civil Engineering</SelectItem>
+                      <SelectItem value="chemical-engineering">Chemical Engineering</SelectItem>
+                      <SelectItem value="biomedical-engineering">Biomedical Engineering</SelectItem>
+                      <SelectItem value="business">Business Administration</SelectItem>
+                      <SelectItem value="finance">Finance</SelectItem>
+                      <SelectItem value="accounting">Accounting</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                      <SelectItem value="economics">Economics</SelectItem>
+                      <SelectItem value="management">Management</SelectItem>
+                      <SelectItem value="psychology">Psychology</SelectItem>
+                      <SelectItem value="sociology">Sociology</SelectItem>
+                      <SelectItem value="political-science">Political Science</SelectItem>
+                      <SelectItem value="international-relations">International Relations</SelectItem>
+                      <SelectItem value="english">English Literature</SelectItem>
+                      <SelectItem value="history">History</SelectItem>
+                      <SelectItem value="philosophy">Philosophy</SelectItem>
+                      <SelectItem value="art">Fine Arts</SelectItem>
+                      <SelectItem value="graphic-design">Graphic Design</SelectItem>
+                      <SelectItem value="music">Music</SelectItem>
+                      <SelectItem value="theater">Theater Arts</SelectItem>
+                      <SelectItem value="communications">Communications</SelectItem>
+                      <SelectItem value="journalism">Journalism</SelectItem>
+                      <SelectItem value="education">Education</SelectItem>
+                      <SelectItem value="nursing">Nursing</SelectItem>
+                      <SelectItem value="medicine">Medicine</SelectItem>
+                      <SelectItem value="pharmacy">Pharmacy</SelectItem>
+                      <SelectItem value="law">Law</SelectItem>
+                      <SelectItem value="architecture">Architecture</SelectItem>
+                      <SelectItem value="environmental-science">Environmental Science</SelectItem>
+                      <SelectItem value="geology">Geology</SelectItem>
+                      <SelectItem value="anthropology">Anthropology</SelectItem>
+                      <SelectItem value="linguistics">Linguistics</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex justify-end">
@@ -631,8 +669,8 @@ export default function CollegeAdminPage() {
                           <p className="text-sm text-green-700">
                             <span className="font-medium">Student Hash:</span>
                           </p>
-                          <div className="flex items-center space-x-2">
-                            <code className="bg-green-100 px-2 py-1 rounded text-sm font-mono text-green-800">
+                          <div className="flex items-start space-x-2">
+                            <code className="bg-green-100 px-2 py-1 rounded text-sm font-mono text-green-800 break-all max-w-full overflow-wrap-anywhere">
                               {studentHash}
                             </code>
                             <Button 
@@ -995,7 +1033,7 @@ export default function CollegeAdminPage() {
                           </div>
                           {request.status === 'pending' && (
                             <Button 
-                              onClick={() => handleApproveBadgeRequest(request.id)}
+                              onClick={() => handleApproveBadge(request.id)}
                               disabled={isLoading || !isConnected}
                               className="min-w-[120px]"
                             >

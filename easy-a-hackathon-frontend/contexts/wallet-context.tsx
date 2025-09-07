@@ -64,10 +64,17 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
   const determineUserRole = useCallback((address: string) => {
     if (!isClient) return;
-    const adminAddresses = (process.env.NEXT_PUBLIC_ADMIN_ADDRESSES || "").split(",");
-    const role = adminAddresses.includes(address) ? "admin" : "student";
+    
+    // Main admin wallet - only this wallet can perform admin functions
+    const MAIN_ADMIN_WALLET = "N4HTLJPU5CSTE475XZ42LHWPVTTR4S2L35Y2YD4VFM6V4DUJPMCWFMTNF4";
+    
+    // Simple whitelist: main admin wallet = admin, all others = student
+    const role = address === MAIN_ADMIN_WALLET ? "admin" : "student";
     setUserRole(role);
     localStorage.setItem("userRole", role);
+    
+    console.log(`🔐 Role determined for ${address}: ${role}`);
+    console.log(`📋 Wallet type: ${role === "admin" ? "University Administrator" : "Student"}`);
   }, [isClient]);
 
   const handleDisconnect = useCallback(() => {
