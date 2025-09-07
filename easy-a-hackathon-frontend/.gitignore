@@ -1,27 +1,62 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# debug
+# Node.js dependencies
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# env files
-.env*
+# Build output
+dist/
+build/
+.cache/
+.next/
+out/
 
-# vercel
-.vercel
-
-# typescript
+# TypeScript
 *.tsbuildinfo
-next-env.d.ts
+
+# AlgoKit / Algorand
+.algokit/
+.algorand/
+contracts/__pycache__/
+contracts/.mypy_cache/
+contracts/.pytest_cache/
+contracts/.venv/
+contracts/.env
+*.algokit-state
+*.teal
+*.pyc
+
+# Python virtual environments (if using PyTEAL)
+.venv/
+env/
+venv/
+__pycache__/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+.docker/
+.dockerignore
+
+# Logs
+*.log
+logs/
+
+# Cache / Framework specific
+.next/
+.cache/
