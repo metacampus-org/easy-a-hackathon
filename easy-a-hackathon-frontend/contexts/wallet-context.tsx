@@ -58,23 +58,33 @@ export function WalletProvider({ children }: WalletProviderProps) {
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [isConnecting, setIsConnecting] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   
   const isConnected = !!accountAddress;
 
   const determineUserRole = useCallback((address: string) => {
+    if (!isClient) return;
     const adminAddresses = (process.env.NEXT_PUBLIC_ADMIN_ADDRESSES || "").split(",");
     const role = adminAddresses.includes(address) ? "admin" : "student";
     setUserRole(role);
     localStorage.setItem("userRole", role);
-  }, []);
+  }, [isClient]);
 
   const handleDisconnect = useCallback(() => {
     setAccountAddress(null)
-    localStorage.removeItem("walletProvider")
-    localStorage.removeItem("activeAccount")
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("walletProvider")
+      localStorage.removeItem("activeAccount")
+    }
   }, []);
 
   useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isClient) return
+
     peraWallet.connector?.on("disconnect", handleDisconnect)
     deflyWallet.connector?.on("disconnect", handleDisconnect)
 
@@ -127,7 +137,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       peraWallet.connector?.off("disconnect", handleDisconnect)
       deflyWallet.connector?.off("disconnect", handleDisconnect)
     }
-  }, [handleDisconnect])
+  }, [handleDisconnect, isClient])
 
   const connectWithProvider = async (provider: WalletProviderType) => {
     console.log("Connecting with provider:", provider)
@@ -198,8 +208,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
         const address = accounts[0];
         setAccountAddress(address);
         determineUserRole(address);
-        localStorage.setItem("walletProvider", provider)
-        localStorage.setItem("activeAccount", address)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem("walletProvider", provider)
+          localStorage.setItem("activeAccount", address)
+        }
       }
     } catch (error: any) {
       if (error?.data?.type !== "CONNECT_MODAL_CLOSED") {
@@ -233,7 +245,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
     handleDisconnect();
     setUserRole(null);
-    localStorage.removeItem("userRole");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("userRole");
+    }
   }
 
   return (

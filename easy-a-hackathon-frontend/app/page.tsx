@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useWallet } from "@/contexts/wallet-context"
 import Link from "next/link"
@@ -12,8 +12,14 @@ import { Shield, GraduationCap, Users, BookOpen, Zap, Lock, User, Eye } from "lu
 export default function HomePage() {
   const { isConnected, userRole } = useWallet()
   const router = useRouter()
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isClient) return
     if (isConnected && userRole) {
       if (userRole === "admin") {
         router.push("/admin")
@@ -21,7 +27,7 @@ export default function HomePage() {
         router.push("/student")
       }
     }
-  }, [isConnected, userRole, router])
+  }, [isConnected, userRole, router, isClient])
 
   return (
     <div className="min-h-screen bg-background">

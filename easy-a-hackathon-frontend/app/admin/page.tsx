@@ -223,34 +223,6 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <Link href="/admin/transcript">
-            <Card className="border-border hover:border-primary/50 transition-colors cursor-pointer">
-              <CardHeader className="text-center pb-4">
-                <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-                <CardTitle className="text-lg">Student Management</CardTitle>
-                <CardDescription>Onboard new students and manage transcripts</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-          
-          <Card className="border-border hover:border-primary/50 transition-colors cursor-pointer opacity-75">
-            <CardHeader className="text-center pb-4">
-              <Award className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <CardTitle className="text-lg text-muted-foreground">Course Catalog</CardTitle>
-              <CardDescription>Manage course offerings and requirements</CardDescription>
-            </CardHeader>
-          </Card>
-          
-          <Card className="border-border hover:border-primary/50 transition-colors cursor-pointer opacity-75">
-            <CardHeader className="text-center pb-4">
-              <Shield className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <CardTitle className="text-lg text-muted-foreground">System Settings</CardTitle>
-              <CardDescription>Configure blockchain and system preferences</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
 
         {/* Main Content */}
         <Tabs defaultValue="requests" className="space-y-6">

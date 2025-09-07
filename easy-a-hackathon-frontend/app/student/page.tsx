@@ -159,8 +159,14 @@ export default function StudentPortalPage() {
     <div className="min-h-screen bg-background">
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-8 flex items-center justify-between">
           <h2 className="text-3xl font-bold text-foreground">My Transcript</h2>
+          <Link href="/student/request">
+            <Button className="flex items-center gap-2">
+              <Award className="h-4 w-4" />
+              Request New Badge
+            </Button>
+          </Link>
         </div>
 
         {/* Access Form */}

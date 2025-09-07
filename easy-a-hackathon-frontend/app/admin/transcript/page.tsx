@@ -22,9 +22,13 @@ import {
   UserPlus,
   BookOpen,
   Hash,
-  CheckCircle
+  CheckCircle,
+  Download,
+  Upload
 } from "lucide-react"
-import { TranscriptService, type StudentRecord, type CourseRecord } from "@/lib/transcript-service"
+import { transcriptService } from "@/lib/transcript-service"
+import { BadgeService } from "@/lib/badge-service"
+import { fileStorageService } from "@/lib/file-storage-service"
 import { useToast } from "@/components/ui/use-toast"
 import { WalletButton } from "@/components/wallet-button"
 
@@ -56,6 +60,11 @@ export default function CollegeAdminPage() {
   const [studentHash, setStudentHash] = useState("")
   const [searchStudentHash, setSearchStudentHash] = useState("")
   const [courses, setCourses] = useState<CourseForm[]>([])
+  const [badgeRequests, setBadgeRequests] = useState<any[]>([])
+  const [verifiedStudent, setVerifiedStudent] = useState<any>(null)
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
   const { toast } = useToast()
 
   // Student onboarding form state
@@ -83,6 +92,200 @@ export default function CollegeAdminPage() {
 
   const { isConnected, accountAddress } = useWallet()
 
+  // Load badge requests on component mount
+  const loadBadgeRequests = async () => {
+    try {
+      const requests = await BadgeService.getAllBadgeRequests()
+      setBadgeRequests(requests)
+    } catch (error) {
+      console.error("Error loading badge requests:", error)
+    }
+  }
+
+  // Load badge requests when tab changes to badge management
+  const handleTabChange = (value: string) => {
+    setActiveTab(value)
+    if (value === "badges") {
+      loadBadgeRequests()
+    }
+  }
+
+  // Approve badge request with blockchain integration
+  const handleApproveBadgeRequest = async (requestId: string) => {
+    if (!isConnected || !accountAddress) {
+      toast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to approve badge requests.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      console.log("🎓 STARTING BADGE APPROVAL PROCESS")
+      console.log("Request ID:", requestId)
+      console.log("Admin Wallet:", accountAddress)
+      console.log("Timestamp:", new Date().toISOString())
+
+      const result = await BadgeService.approveBadgeRequest(requestId, accountAddress)
+      
+      console.log("🏆 BADGE APPROVAL SUCCESS!")
+      console.log("🔐 Badge Hash (ON-CHAIN):", result.badgeHash)
+      console.log("🔒 Verification Hash:", result.verificationHash)
+      console.log("📡 Blockchain Transaction ID:", result.txId)
+      console.log("✅ Badge successfully created and stored on blockchain!")
+
+      toast({
+        title: "Badge Approved Successfully!",
+        description: `Badge hash: ${result.badgeHash.substring(0, 16)}...`,
+      })
+
+      // Reload badge requests to show updated status
+      await loadBadgeRequests()
+
+    } catch (error) {
+      console.error("❌ BADGE APPROVAL FAILED:", error)
+      toast({
+        title: "Badge Approval Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Verify student by hash
+  const handleVerifyStudent = async () => {
+    if (!searchStudentHash.trim()) {
+      toast({
+        title: "Student Hash Required",
+        description: "Please enter a student hash to verify.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsVerifying(true)
+    try {
+      console.log("🔍 VERIFYING STUDENT")
+      console.log("Student Hash:", searchStudentHash)
+      console.log("Timestamp:", new Date().toISOString())
+
+      // Use transcript service to verify student
+      const verificationResult = await transcriptService.verifyTranscript(searchStudentHash)
+      
+      console.log("📋 Verification Result:", verificationResult)
+      
+      if (verificationResult.studentExists) {
+        // Get student details from storage
+        const studentDetails = await fileStorageService.getStudent(searchStudentHash)
+        
+        setVerifiedStudent({
+          hash: searchStudentHash,
+          details: studentDetails,
+          verification: verificationResult
+        })
+        
+        console.log("✅ STUDENT VERIFIED SUCCESSFULLY")
+        console.log("Student Name:", studentDetails?.personalInfo?.firstName, studentDetails?.personalInfo?.lastName)
+        console.log("GPA:", verificationResult.gpa)
+        console.log("Total Credits:", verificationResult.totalCredits)
+        console.log("Courses:", verificationResult.courses?.length || 0)
+        
+        toast({
+          title: "Student Verified!",
+          description: `Found ${verificationResult.courses?.length || 0} courses with GPA ${verificationResult.gpa}`,
+        })
+      } else {
+        setVerifiedStudent(null)
+        console.log("❌ STUDENT NOT FOUND")
+        console.log("Hash searched:", searchStudentHash)
+        
+        toast({
+          title: "Student Not Found",
+          description: "No student found with this hash. Please check the hash or onboard the student first.",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("❌ STUDENT VERIFICATION FAILED:", error)
+      setVerifiedStudent(null)
+      toast({
+        title: "Verification Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      setIsVerifying(false)
+    }
+  }
+
+  // Export data to JSON file
+  const handleExportData = async () => {
+    setIsExporting(true)
+    try {
+      console.log("📤 STARTING DATA EXPORT")
+      console.log("Timestamp:", new Date().toISOString())
+      
+      await fileStorageService.exportToFile()
+      
+      console.log("✅ DATA EXPORT COMPLETED")
+      toast({
+        title: "Data Exported Successfully!",
+        description: "Your MetaCAMPUS data has been downloaded as a JSON file.",
+      })
+    } catch (error) {
+      console.error("❌ DATA EXPORT FAILED:", error)
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // Import data from JSON file
+  const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsImporting(true)
+    try {
+      console.log("📥 STARTING DATA IMPORT")
+      console.log("File:", file.name)
+      console.log("Size:", file.size, "bytes")
+      console.log("Timestamp:", new Date().toISOString())
+      
+      await fileStorageService.importFromFile(file)
+      
+      console.log("✅ DATA IMPORT COMPLETED")
+      toast({
+        title: "Data Imported Successfully!",
+        description: `Data from ${file.name} has been imported into MetaCAMPUS.`,
+      })
+
+      // Refresh badge requests if on badges tab
+      if (activeTab === "badges") {
+        await loadBadgeRequests()
+      }
+    } catch (error) {
+      console.error("❌ DATA IMPORT FAILED:", error)
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      setIsImporting(false)
+      // Reset file input
+      event.target.value = ''
+    }
+  }
+
   const handleOnboardStudent = async () => {
     if (!isConnected) {
       toast({
@@ -102,9 +305,21 @@ export default function CollegeAdminPage() {
       return
     }
 
+    // Log the onboarding attempt
+    console.log("🎓 STUDENT ONBOARDING INITIATED")
+    console.log("Admin Wallet:", accountAddress)
+    console.log("Student Data:", {
+      firstName: studentForm.firstName,
+      lastName: studentForm.lastName,
+      dateOfBirth: studentForm.dateOfBirth,
+      nationalId: studentForm.nationalId || "N/A",
+      degreeProgram: studentForm.degreeProgram || "N/A"
+    })
+    console.log("Timestamp:", new Date().toISOString())
+
     setIsLoading(true)
     try {
-      const result = await TranscriptService.onboardStudent(
+      const result = await transcriptService.onboardStudent(
         {
           firstName: studentForm.firstName,
           lastName: studentForm.lastName,
@@ -119,6 +334,12 @@ export default function CollegeAdminPage() {
       )
 
       setStudentHash(result.studentHash)
+      
+      // Log successful onboarding
+      console.log("✅ STUDENT ONBOARDING SUCCESS")
+      console.log("Generated Student Hash:", result.studentHash)
+      console.log("Student Name:", `${studentForm.firstName} ${studentForm.lastName}`)
+      console.log("Blockchain Transaction:", result.txId || "Simulated")
       
       toast({
         title: "Student Onboarded Successfully",
@@ -135,7 +356,12 @@ export default function CollegeAdminPage() {
       })
 
     } catch (error) {
-      console.error("Error onboarding student:", error)
+      // Log the error
+      console.error("❌ STUDENT ONBOARDING FAILED")
+      console.error("Error Details:", error)
+      console.error("Student Data:", studentForm)
+      console.error("Admin Wallet:", accountAddress)
+      
       toast({
         title: "Error",
         description: "Failed to onboard student. Please try again.",
@@ -225,10 +451,10 @@ export default function CollegeAdminPage() {
       // Convert courses to the required format
       const courseRecords: CourseRecord[] = courses.map(course => ({
         ...course,
-        gradePoints: TranscriptService.calculateGradePoints(course.grade)
+        gradePoints: transcriptService.calculateGradePoints(course.grade)
       }))
 
-      const result = await TranscriptService.updateTranscript(
+      const result = await transcriptService.updateTranscript(
         searchStudentHash,
         courseRecords,
         accountAddress!
@@ -258,7 +484,7 @@ export default function CollegeAdminPage() {
     if (courses.length === 0) return 0
     const totalCredits = courses.reduce((sum, course) => sum + course.credits, 0)
     const weightedSum = courses.reduce((sum, course) => {
-      const gradePoints = TranscriptService.calculateGradePoints(course.grade)
+      const gradePoints = transcriptService.calculateGradePoints(course.grade)
       return sum + (gradePoints * course.credits)
     }, 0)
     return totalCredits > 0 ? (weightedSum / totalCredits).toFixed(2) : "0.00"
@@ -268,15 +494,47 @@ export default function CollegeAdminPage() {
     <div className="min-h-screen bg-background">
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-8 flex justify-between items-center">
           <h2 className="text-3xl font-bold text-foreground">Transcript Management</h2>
+          
+          {/* Data Management Controls */}
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={handleExportData}
+              disabled={isExporting}
+              className="min-w-[120px]"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? "Exporting..." : "Export Data"}
+            </Button>
+            
+            <div className="relative">
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImportData}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={isImporting}
+              />
+              <Button 
+                variant="outline"
+                disabled={isImporting}
+                className="min-w-[120px]"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {isImporting ? "Importing..." : "Import Data"}
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="onboard">Onboard Student</TabsTrigger>
-            <TabsTrigger value="transcript">Manage Transcript</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="onboard">Student Onboarding</TabsTrigger>
+            <TabsTrigger value="transcript">Transcript Management</TabsTrigger>
+            <TabsTrigger value="badges">Badge Approval</TabsTrigger>
           </TabsList>
 
           {/* Onboard Student Tab */}
@@ -419,13 +677,63 @@ export default function CollegeAdminPage() {
                       onChange={(e) => setSearchStudentHash(e.target.value)}
                     />
                   </div>
-                  <Button variant="outline">
+                  <Button 
+                    variant="outline"
+                    onClick={handleVerifyStudent}
+                    disabled={isVerifying || !searchStudentHash.trim()}
+                  >
                     <Eye className="h-4 w-4 mr-2" />
-                    Verify Student
+                    {isVerifying ? "Verifying..." : "Verify Student"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Student Verification Result */}
+            {verifiedStudent && (
+              <Card className="border-green-200 bg-green-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-green-700">
+                    <CheckCircle className="h-5 w-5" />
+                    <span>Student Verified</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Student Name</p>
+                        <p className="text-green-600">
+                          {verifiedStudent.details?.personalInfo?.firstName} {verifiedStudent.details?.personalInfo?.lastName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Degree Program</p>
+                        <p className="text-green-600">{verifiedStudent.details?.personalInfo?.degreeProgram}</p>
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Current GPA</p>
+                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.gpa}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Total Credits</p>
+                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.totalCredits}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Courses Completed</p>
+                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.courses?.length || 0}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-green-700">Student Hash</p>
+                      <p className="font-mono text-xs text-green-600 break-all">{verifiedStudent.hash}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Add Course */}
             <Card className="border-border">
@@ -630,6 +938,77 @@ export default function CollegeAdminPage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Badge Approval Tab */}
+          <TabsContent value="badges" className="space-y-6">
+            <Card className="border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <CheckCircle className="h-5 w-5" />
+                  <span>Badge Request Approval</span>
+                </CardTitle>
+                <CardDescription>
+                  Review and approve student badge requests. Approved badges will be created on the blockchain.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {badgeRequests.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No badge requests found</p>
+                    <p className="text-sm">Students can request badges from their dashboard</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {badgeRequests.map((request) => (
+                      <div key={request.id} className="border border-border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-semibold">{request.courseName}</h4>
+                              <Badge variant={request.status === 'pending' ? 'secondary' : request.status === 'approved' ? 'default' : 'destructive'}>
+                                {request.status}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              <div className="flex items-center space-x-4">
+                                <span>Course ID: {request.courseId}</span>
+                                <span>Request Date: {new Date(request.requestDate).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Hash className="h-3 w-3" />
+                                <span className="font-mono text-xs">{request.studentHash.substring(0, 16)}...</span>
+                              </div>
+                              {request.blockchainHash && (
+                                <div className="flex items-center space-x-2 text-green-600">
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span className="font-mono text-xs">Badge Hash: {request.blockchainHash.substring(0, 16)}...</span>
+                                </div>
+                              )}
+                              {request.approvalDate && (
+                                <div className="text-xs text-green-600">
+                                  Approved: {new Date(request.approvalDate).toLocaleDateString()} by {request.adminWallet?.substring(0, 8)}...
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {request.status === 'pending' && (
+                            <Button 
+                              onClick={() => handleApproveBadgeRequest(request.id)}
+                              disabled={isLoading || !isConnected}
+                              className="min-w-[120px]"
+                            >
+                              {isLoading ? "Approving..." : "Approve Badge"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

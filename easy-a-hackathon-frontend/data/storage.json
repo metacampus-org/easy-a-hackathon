@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "timestamp": "2025-01-07T10:19:07.000Z",
+  "exportedBy": "MetaCAMPUS Storage Service",
+  "summary": {
+    "totalStudents": 0,
+    "totalTranscripts": 0,
+    "totalBadgeRequests": 0,
+    "totalBadges": 0
+  },
+  "data": {
+    "students": [],
+    "transcripts": [],
+    "badgeRequests": [],
+    "badges": []
+  }
+}
