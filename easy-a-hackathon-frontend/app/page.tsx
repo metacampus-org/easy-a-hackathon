@@ -1,3 +1,8 @@
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useWallet } from "@/contexts/wallet-context"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -5,6 +10,19 @@ import { Badge } from "@/components/ui/badge"
 import { Shield, GraduationCap, Users, BookOpen, Zap, Lock, User, Eye } from "lucide-react"
 
 export default function HomePage() {
+  const { isConnected, userRole } = useWallet()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (isConnected && userRole) {
+      if (userRole === "admin") {
+        router.push("/admin/transcript")
+      } else {
+        router.push("/student")
+      }
+    }
+  }, [isConnected, userRole, router])
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}

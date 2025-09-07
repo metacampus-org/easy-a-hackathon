@@ -6,11 +6,14 @@ import { DeflyWalletConnect } from "@blockshake/defly-connect"
 
 type WalletProviderType = "pera" | "defly" | "exodus" | "lute";
 
+type UserRole = "student" | "admin"
+
 interface WalletContextType {
   isConnected: boolean
   isConnecting: boolean
   isModalOpen: boolean
   accountAddress: string | null
+  userRole: UserRole | null
   connect: () => void
   disconnect: () => void
   connectWithProvider: (provider: WalletProviderType) => Promise<void>
@@ -52,10 +55,18 @@ interface WalletProviderProps {
 
 export function WalletProvider({ children }: WalletProviderProps) {
   const [accountAddress, setAccountAddress] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [isConnecting, setIsConnecting] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   
   const isConnected = !!accountAddress;
+
+  const determineUserRole = useCallback((address: string) => {
+    const adminAddresses = (process.env.NEXT_PUBLIC_ADMIN_ADDRESSES || "").split(",");
+    const role = adminAddresses.includes(address) ? "admin" : "student";
+    setUserRole(role);
+    localStorage.setItem("userRole", role);
+  }, []);
 
   const handleDisconnect = useCallback(() => {
     setAccountAddress(null)
@@ -77,7 +88,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
         peraWallet.reconnectSession()
           .then((accounts) => {
             if (accounts && accounts.length > 0) {
-              setAccountAddress(accounts[0])
+              setAccountAddress(accounts[0]);
+              determineUserRole(accounts[0]);
             }
           })
           .catch(e => console.log(`${lastUsedProvider} reconnect error:`, e))
@@ -86,7 +98,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
         deflyWallet.reconnectSession()
           .then((accounts) => {
             if (accounts && accounts.length > 0) {
-              setAccountAddress(accounts[0])
+              setAccountAddress(accounts[0]);
+              determineUserRole(accounts[0]);
             }
           })
           .catch(e => console.log(`${lastUsedProvider} reconnect error:`, e))
@@ -94,6 +107,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       } else if (lastUsedProvider === 'exodus' || lastUsedProvider === 'lute') {
         // For browser extensions, just restore the saved account
         setAccountAddress(savedAccount);
+        determineUserRole(savedAccount);
         setIsConnecting(false);
       } else {
         setIsConnecting(false);
@@ -175,7 +189,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
       if (accounts.length > 0) {
         const address = accounts[0];
-        setAccountAddress(address)
+        setAccountAddress(address);
+        determineUserRole(address);
         localStorage.setItem("walletProvider", provider)
         localStorage.setItem("activeAccount", address)
       }
@@ -210,6 +225,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
       console.error("Error during disconnect:", e);
     }
     handleDisconnect();
+    setUserRole(null);
+    localStorage.removeItem("userRole");
   }
 
   return (
@@ -219,6 +236,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
         isConnecting,
         isModalOpen,
         accountAddress,
+        userRole,
         connect,
         disconnect,
         connectWithProvider,
