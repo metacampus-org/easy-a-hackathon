@@ -13,24 +13,10 @@ def approval_program() -> Expr:
     Main approval program for the MetaCAMPUS Badge Management smart contract.
     
     Handles:
-<<<<<<< HEAD
-    - Student onboarding (creating unique student records)
-    - Transcript updates (adding/modifying academic data)
-    - Transcript verification (reading blockchain data)
-    
-    Returns:
-        Expr: A PyTeal expression representing the approval program
-    
-    Note:
-        All operations are atomic and stateless between calls
-        Box storage is used for larger data items
-        Global state is used for contract metadata
-=======
     - Badge request creation and management
     - Badge approval workflow
     - Badge minting and issuance
     - Badge verification
->>>>>>> bd4644f51370fddfbec2924ffeb18dfd08d3dcb1
     """
     
     # Application state keys
