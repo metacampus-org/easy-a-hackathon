@@ -9,15 +9,8 @@ import { cn } from "@/lib/utils"
 
 const navLinks = {
   all: [
-    { href: "/", label: "Home", icon: Shield },
-  ],
-  student: [
-    { href: "/student", label: "My Transcript", icon: User },
-    { href: "/verify", label: "Verify Records", icon: Shield },
-  ],
-  admin: [
-    { href: "/admin/transcript", label: "Transcript Management", icon: GraduationCap },
-    { href: "/admin/curriculum", label: "Curriculum Sync", icon: Shield },
+    { href: "/student", label: "Student Portal", icon: User },
+    { href: "/admin/transcript", label: "University Portal", icon: GraduationCap },
   ],
 } as const;
 
@@ -35,18 +28,6 @@ export function Header() {
           </Link>
           <nav className="hidden md:flex items-center gap-4">
             {navLinks.all.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-                  pathname === link.href && "text-foreground"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-            {userRole && navLinks[userRole].map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

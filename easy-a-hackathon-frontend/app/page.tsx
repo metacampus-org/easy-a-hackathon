@@ -25,35 +25,12 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">Student Transcript Management</h1>
-            <Badge variant="secondary" className="ml-2">
-              Algorand Blockchain
-            </Badge>
-          </div>
-          <nav className="flex items-center space-x-4">
-            <Link href="/student" className="text-muted-foreground hover:text-foreground">
-              Student Portal
-            </Link>
-            <Link href="/admin/transcript" className="text-muted-foreground hover:text-foreground">
-              College Admin
-            </Link>
-            <Link href="/verify" className="text-muted-foreground hover:text-foreground">
-              Verify Transcript
-            </Link>
-          </nav>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
           <h2 className="text-5xl font-bold text-foreground mb-6 text-balance">
-            Decentralized Student Transcript Management on Algorand
+            MetaCAMPUS - Decentralized Academic Records
           </h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto text-pretty">
             Secure, transparent, and immutable student academic records powered by Algorand blockchain technology. 
@@ -63,13 +40,13 @@ export default function HomePage() {
             <Link href="/student">
               <Button size="lg" className="text-lg px-8">
                 <User className="mr-2 h-5 w-5" />
-                View My Transcript
+                Student Portal
               </Button>
             </Link>
-            <Link href="/verify">
+            <Link href="/admin/transcript">
               <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent">
-                <Eye className="mr-2 h-5 w-5" />
-                Verify Student Records
+                <GraduationCap className="mr-2 h-5 w-5" />
+                University Portal
               </Button>
             </Link>
           </div>
