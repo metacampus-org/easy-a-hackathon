@@ -20,9 +20,7 @@ export interface StudentRecord {
 }
 
 export interface CourseRecord {
-  courseId: string
   courseName: string
-  courseCode: string
   credits: number
   semester: string
   year: number
@@ -91,7 +89,7 @@ export class TranscriptService {
   generateTranscriptHash(transcriptData: TranscriptData): string {
     const dataString = JSON.stringify({
       studentHash: transcriptData.studentHash,
-      courses: transcriptData.courses.sort((a, b) => a.courseId.localeCompare(b.courseId)),
+      courses: transcriptData.courses.sort((a, b) => a.courseName.localeCompare(b.courseName)),
       gpa: transcriptData.gpa,
       totalCredits: transcriptData.totalCredits,
       lastUpdated: transcriptData.lastUpdated
@@ -401,9 +399,7 @@ export class TranscriptService {
           studentHash,
           courses: [
             {
-              courseId: "CS101",
               courseName: "Introduction to Computer Science",
-              courseCode: "CS-101",
               credits: 3,
               semester: "Fall",
               year: 2024,
@@ -414,9 +410,7 @@ export class TranscriptService {
               completionDate: "2024-12-15"
             },
             {
-              courseId: "MATH201",
               courseName: "Calculus II",
-              courseCode: "MATH-201",
               credits: 4,
               semester: "Fall",
               year: 2024,
@@ -482,9 +476,7 @@ export class TranscriptService {
   validateCourseData(course: Partial<CourseRecord>): { isValid: boolean; errors: string[] } {
     const errors: string[] = []
 
-    if (!course.courseId?.trim()) errors.push("Course ID is required")
     if (!course.courseName?.trim()) errors.push("Course name is required")
-    if (!course.courseCode?.trim()) errors.push("Course code is required")
     if (!course.credits || course.credits <= 0) errors.push("Valid credits value is required")
     if (!course.semester?.trim()) errors.push("Semester is required")
     if (!course.year || course.year < 1900 || course.year > 2100) errors.push("Valid year is required")
@@ -496,6 +488,53 @@ export class TranscriptService {
     return {
       isValid: errors.length === 0,
       errors
+    }
+  }
+
+  // Verify student by wallet address
+  async verifyStudent(walletAddress: string): Promise<{ isValid: boolean; student?: StudentRecord; transcript?: TranscriptData }> {
+    try {
+      console.log(`🔍 Verifying student for wallet: ${walletAddress}`)
+      
+      // Load all data from storage
+      const data = await fileStorageService.loadData()
+      
+      // Find student by wallet mapping or direct wallet address
+      let student = null
+      
+      // Check wallet mappings first
+      if (data.data && (data.data as any).walletMappings) {
+        const walletMappings = (data.data as any).walletMappings
+        const mapping = walletMappings[walletAddress]
+        if (mapping && mapping.studentHash) {
+          student = data.data.students.find(s => s.studentHash === mapping.studentHash)
+        }
+      }
+      
+      // If no mapping found, check if any student has this wallet as their hash (legacy)
+      if (!student) {
+        student = data.data.students.find(s => s.studentHash === walletAddress)
+      }
+      
+      if (!student) {
+        console.log(`❌ No student found for wallet: ${walletAddress}`)
+        return { isValid: false }
+      }
+      
+      console.log(`✅ Found student: ${student.personalInfo.firstName} ${student.personalInfo.lastName}`)
+      
+      // Get transcript for this student
+      const transcript = data.data.transcripts.find(t => t.studentHash === student.studentHash)
+      
+      return {
+        isValid: true,
+        student,
+        transcript
+      }
+      
+    } catch (error) {
+      console.error('❌ Error verifying student:', error)
+      return { isValid: false }
     }
   }
 

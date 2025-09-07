@@ -49,21 +49,57 @@ class FileStorageService {
     }
   }
 
-  // Read data from localStorage
-  private readData(): StorageData {
+  // Read data from localStorage and JSON file
+  private async readData(): Promise<StorageData> {
     try {
       if (!this.isBrowser) {
         return this.getDefaultData()
       }
 
-      const stored = localStorage.getItem(this.storageKey)
-      if (!stored) {
-        const defaultData = this.getDefaultData()
-        this.writeData(defaultData)
-        return defaultData
+      // First try to load from the JSON file
+      let fileData: StorageData | null = null
+      try {
+        const response = await fetch('/api/storage/load')
+        if (response.ok) {
+          fileData = await response.json()
+          console.log('✅ Loaded data from storage.json file')
+        }
+      } catch (error) {
+        console.log('📝 No existing storage.json file found, will create new one')
       }
 
-      return JSON.parse(stored)
+      // Then check localStorage
+      const stored = localStorage.getItem(this.storageKey)
+      let localData: StorageData | null = null
+      
+      if (stored) {
+        try {
+          localData = JSON.parse(stored)
+        } catch (error) {
+          console.error('❌ Error parsing localStorage data:', error)
+        }
+      }
+
+      // Compare timestamps and use the most recent data
+      if (fileData && (!localData || fileData.timestamp > localData.timestamp)) {
+        console.log('🔄 Using file data (more recent)')
+        await this.writeData(fileData) // Sync localStorage with file
+        return fileData
+      } else {
+        console.log('🔄 Using localStorage data (more recent)')
+        // Check if localStorage data has valid student personalInfo
+        if (localData?.data?.students?.length > 0) {
+          const hasValidPersonalInfo = localData.data.students.some((s: any) => 
+            s.personalInfo && s.personalInfo.firstName && s.personalInfo.lastName
+          )
+          if (!hasValidPersonalInfo && fileData) {
+            console.log('⚠️ localStorage missing personalInfo, using file data instead')
+            await this.writeData(fileData) // Sync localStorage with file
+            return fileData
+          }
+        }
+        return localData || this.getDefaultData()
+      }
     } catch (error) {
       console.error('❌ Error reading storage data:', error)
       return this.getDefaultData()
@@ -71,7 +107,7 @@ class FileStorageService {
   }
 
   // Write data to localStorage
-  private writeData(data: StorageData): void {
+  private async writeData(data: StorageData): Promise<void> {
     try {
       if (!this.isBrowser) {
         console.warn('⚠️ Cannot write to localStorage in server environment')
@@ -87,7 +123,7 @@ class FileStorageService {
       }
       data.timestamp = new Date().toISOString()
 
-      this.saveData(data)
+      await this.saveData(data)
     } catch (error) {
       console.error('❌ Error writing storage data:', error)
       throw error
@@ -97,7 +133,7 @@ class FileStorageService {
   // Student operations
   async saveStudent(student: StudentRecord): Promise<void> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       const existingIndex = data.data.students.findIndex(s => s.studentHash === student.studentHash)
       
       if (existingIndex >= 0) {
@@ -117,7 +153,7 @@ class FileStorageService {
 
   async getStudent(studentHash: string): Promise<StudentRecord | null> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       return data.data.students.find(s => s.studentHash === studentHash) || null
     } catch (error) {
       console.error('❌ Error getting student:', error)
@@ -127,7 +163,7 @@ class FileStorageService {
 
   async getAllStudents(): Promise<StudentRecord[]> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       return data.data.students
     } catch (error) {
       console.error('❌ Error getting all students:', error)
@@ -138,7 +174,7 @@ class FileStorageService {
   // Transcript operations
   async saveTranscript(transcript: TranscriptData): Promise<void> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       const existingIndex = data.data.transcripts.findIndex(t => t.studentHash === transcript.studentHash)
       
       if (existingIndex >= 0) {
@@ -158,7 +194,7 @@ class FileStorageService {
 
   async getTranscript(studentHash: string): Promise<TranscriptData | null> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       return data.data.transcripts.find(t => t.studentHash === studentHash) || null
     } catch (error) {
       console.error('❌ Error getting transcript:', error)
@@ -168,7 +204,7 @@ class FileStorageService {
 
   async getAllTranscripts(): Promise<TranscriptData[]> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       return data.data.transcripts
     } catch (error) {
       console.error('❌ Error getting all transcripts:', error)
@@ -179,7 +215,7 @@ class FileStorageService {
   // Badge request operations
   async saveBadgeRequest(request: any): Promise<void> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       const existingIndex = data.data.badgeRequests.findIndex(r => r.id === request.id)
       
       if (existingIndex >= 0) {
@@ -199,7 +235,7 @@ class FileStorageService {
 
   async getBadgeRequests(studentHash?: string): Promise<any[]> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       const requests = data.data.badgeRequests
       
       if (studentHash) {
@@ -215,7 +251,7 @@ class FileStorageService {
   // Badge operations
   async saveBadge(badge: any): Promise<void> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       const existingIndex = data.data.badges.findIndex(b => b.badgeHash === badge.badgeHash)
       
       if (existingIndex >= 0) {
@@ -235,7 +271,7 @@ class FileStorageService {
 
   async getBadge(badgeHash: string): Promise<any | null> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       return data.data.badges.find(b => b.badgeHash === badgeHash) || null
     } catch (error) {
       console.error('❌ Error getting badge:', error)
@@ -245,7 +281,7 @@ class FileStorageService {
 
   async getBadges(studentHash?: string): Promise<any[]> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       const badges = data.data.badges
       
       if (studentHash) {
@@ -292,8 +328,8 @@ class FileStorageService {
       
       console.log('✅ Data saved to storage.json file')
     } catch (error) {
-      console.warn('⚠️ Could not save to JSON file (API not available):', error)
-      // Don't throw - localStorage save is still successful
+      console.error('❌ Could not save to JSON file:', error)
+      throw error // Re-throw the error to notify the caller
     }
   }
 
@@ -329,7 +365,7 @@ class FileStorageService {
       console.log('📥 Starting data import...')
       console.log('Import summary:', importData.summary || 'Legacy format')
       
-      const currentData = this.readData()
+      const currentData = await this.readData()
       
       // Import students
       const students = data.students || []
@@ -406,10 +442,26 @@ class FileStorageService {
     })
   }
 
+  // Load all data (public method)
+  async loadData(): Promise<StorageData> {
+    return await this.readData()
+  }
+
+  // Export data as JSON string
+  async exportToJSON(): Promise<string> {
+    try {
+      const data = await this.readData()
+      return JSON.stringify(data, null, 2)
+    } catch (error) {
+      console.error('❌ Error exporting to JSON:', error)
+      throw error
+    }
+  }
+
   // Get storage statistics
   async getStats(): Promise<any> {
     try {
-      const data = this.readData()
+      const data = await this.readData()
       const jsonString = JSON.stringify(data)
       return {
         version: data.version,

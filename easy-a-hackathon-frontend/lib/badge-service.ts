@@ -7,7 +7,6 @@ import { fileStorageService } from "./file-storage-service"
 export interface BadgeRequest {
   id: string
   studentHash: string
-  courseId: string
   courseName: string
   requestDate: string
   status: "pending" | "approved" | "rejected"
@@ -19,7 +18,6 @@ export interface BadgeRequest {
 export interface Badge {
   badgeHash: string
   studentHash: string
-  courseId: string
   courseName: string
   issueDate: string
   verificationHash: string
@@ -34,10 +32,10 @@ export const BADGE_APP_ID = process.env.NEXT_PUBLIC_BADGE_APP_ID
 export class BadgeService {
   
   // Generate unique badge hash
-  generateBadgeHash(studentHash: string, courseId: string, timestamp: number): string {
+  generateBadgeHash(studentHash: string, courseName: string, timestamp: number): string {
     const dataString = JSON.stringify({
       studentHash,
-      courseId,
+      courseName,
       timestamp,
       issuer: "MetaCAMPUS"
     })
@@ -48,33 +46,95 @@ export class BadgeService {
     return Array.from(data).map(byte => byte.toString(16).padStart(2, '0')).join('')
   }
 
-  // Create badge request (student-initiated)
-  async createBadgeRequest(
-    studentHash: string,
-    courseId: string,
-    courseName: string,
-    additionalInfo?: string
-  ): Promise<{ requestId: string; txId?: string }> {
+  // Find student hash by personal information
+  async findStudentHash(firstName: string, lastName: string, dateOfBirth: string): Promise<string | null> {
     try {
-      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      console.log('🔍 SEARCHING FOR STUDENT:', { firstName, lastName, dateOfBirth })
       
-      const badgeRequest: BadgeRequest = {
-        id: requestId,
-        studentHash,
-        courseId,
-        courseName,
-        requestDate: new Date().toISOString(),
-        status: "pending"
+      const storage = await fileStorageService.loadData()
+      if (!storage.data?.students || !Array.isArray(storage.data.students)) {
+        console.log('❌ No students data found')
+        return null
       }
 
-      // Save to local storage
-      await fileStorageService.saveBadgeRequest(badgeRequest)
+      console.log('📊 Available students:', storage.data.students.length)
+      storage.data.students.forEach((s: any, index: number) => {
+        console.log(`Student ${index + 1}:`, {
+          firstName: s.personalInfo?.firstName,
+          lastName: s.personalInfo?.lastName,
+          dateOfBirth: s.personalInfo?.dateOfBirth,
+          studentHash: s.studentHash?.substring(0, 16) + '...'
+        })
+      })
 
-      console.log("📝 Badge request created:", requestId)
-      console.log("Student:", studentHash)
-      console.log("Course:", courseId, "-", courseName)
+      const student = storage.data.students.find((s: any) => {
+        const firstNameMatch = s.personalInfo?.firstName?.toLowerCase() === firstName.toLowerCase()
+        const lastNameMatch = s.personalInfo?.lastName?.toLowerCase() === lastName.toLowerCase()
+        const dobMatch = s.personalInfo?.dateOfBirth === dateOfBirth
+        
+        console.log('🔍 Checking student:', {
+          stored: { 
+            firstName: s.personalInfo?.firstName, 
+            lastName: s.personalInfo?.lastName, 
+            dateOfBirth: s.personalInfo?.dateOfBirth 
+          },
+          search: { firstName, lastName, dateOfBirth },
+          matches: { firstNameMatch, lastNameMatch, dobMatch }
+        })
+        
+        return firstNameMatch && lastNameMatch && dobMatch
+      })
 
-      // If smart contract is deployed, also create on-chain request
+      if (student) {
+        console.log('✅ STUDENT FOUND:', student.studentHash)
+        return student.studentHash
+      } else {
+        console.log('❌ NO MATCHING STUDENT FOUND')
+        return null
+      }
+    } catch (error) {
+      console.error('❌ Error finding student hash:', error)
+      return null
+    }
+  }
+
+  // Create badge request (student-initiated) - Updated to accept object parameter
+  async createBadgeRequest(requestData: any): Promise<any> {
+    // Handle both object and individual parameters for backward compatibility
+    const courseName = typeof requestData === 'string' ? requestData : requestData.courseName;
+    const walletAddress = typeof requestData === 'string' ? arguments[1] : requestData.walletAddress;
+    const studentHash = typeof requestData === 'object' ? requestData.studentHash : walletAddress;
+    const additionalInfo = typeof requestData === 'object' ? requestData.additionalInfo : '';
+    const requestDate = typeof requestData === 'object' ? requestData.requestDate : new Date().toISOString();
+    const status = typeof requestData === 'object' ? requestData.status : 'pending';
+    try {
+      const storage = await fileStorageService.loadData()
+      
+      // Create comprehensive request object
+      const request = {
+        id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        studentHash: studentHash || walletAddress,
+        walletAddress: walletAddress,
+        courseName,
+        requestDate: requestDate,
+        status: status as 'pending' | 'approved' | 'rejected',
+        additionalInfo: additionalInfo
+      }
+
+      storage.data.badgeRequests.push(request)
+      
+      // Update wallet mappings
+      if (!storage.data.walletMappings) {
+        storage.data.walletMappings = {}
+      }
+      storage.data.walletMappings[walletAddress] = {
+        studentHash: walletAddress,
+        registeredAt: new Date().toISOString()
+      }
+      
+      await fileStorageService.saveData(storage)
+      
+      // Try blockchain integration if available
       if (BADGE_APP_ID && BADGE_APP_ID > 0) {
         try {
           const suggestedParams = await algodClient.getTransactionParams().do()
@@ -85,7 +145,7 @@ export class BadgeService {
             onComplete: algosdk.OnApplicationComplete.NoOpOC,
             appArgs: [
               new TextEncoder().encode("create_badge_request"),
-              new TextEncoder().encode(JSON.stringify(badgeRequest))
+              new TextEncoder().encode(JSON.stringify(request))
             ],
             suggestedParams,
           })
@@ -93,13 +153,13 @@ export class BadgeService {
           const txId = appCallTxn.txID()
           console.log("🔗 Badge request transaction created:", txId)
           
-          return { requestId, txId }
+          return { requestId: request.id, txId }
         } catch (blockchainError) {
           console.warn("⚠️ Blockchain request failed, using local storage only:", blockchainError)
         }
       }
 
-      return { requestId }
+      return { requestId: request.id }
     } catch (error) {
       console.error("❌ Error creating badge request:", error)
       throw error
@@ -140,7 +200,7 @@ export class BadgeService {
 
       // Generate badge hash
       const timestamp = Date.now()
-      const badgeHash = this.generateBadgeHash(request.studentHash, request.courseId, timestamp)
+      const badgeHash = this.generateBadgeHash(request.studentHash, request.courseName, timestamp)
       
       console.log("🔐 Generated badge hash:", badgeHash)
 
@@ -148,7 +208,6 @@ export class BadgeService {
       const badgeData = {
         badgeHash,
         studentHash: request.studentHash,
-        courseId: request.courseId,
         courseName: request.courseName,
         issueDate: new Date().toISOString(),
         approvedBy: adminWallet,
@@ -321,13 +380,93 @@ export class BadgeService {
     }
   }
 
-  // Get badge requests for specific student
-  async getStudentBadgeRequests(studentHash: string): Promise<BadgeRequest[]> {
+  // Get badge requests for specific student by wallet address
+  async getStudentBadgeRequests(walletAddress: string): Promise<BadgeRequest[]> {
     try {
-      return await fileStorageService.getBadgeRequests(studentHash)
+      const allRequests = await fileStorageService.getBadgeRequests()
+      return allRequests.filter(request => 
+        request.walletAddress === walletAddress || request.studentHash === walletAddress
+      )
     } catch (error) {
       console.error("❌ Error getting student badge requests:", error)
       return []
+    }
+  }
+
+  // Get student badges by wallet address
+  async getStudentBadges(walletAddress: string): Promise<Badge[]> {
+    try {
+      const storage = await fileStorageService.loadData()
+      if (!storage.data?.badges || !Array.isArray(storage.data.badges)) {
+        console.log("📝 No badges found in storage")
+        return []
+      }
+      return storage.data.badges.filter((badge: Badge) => 
+        badge.studentHash === walletAddress
+      )
+    } catch (error) {
+      console.error("❌ Error getting student badges:", error)
+      return []
+    }
+  }
+
+  // Get student profile by wallet address
+  async getStudentProfile(walletAddress: string): Promise<any> {
+    try {
+      const storage = await fileStorageService.loadData()
+      
+      // Get wallet mapping
+      const walletMapping = storage.data?.walletMappings?.[walletAddress]
+      
+      // Get badge requests and badges
+      const badgeRequests = await this.getStudentBadgeRequests(walletAddress)
+      const badges = await this.getStudentBadges(walletAddress)
+      
+      return {
+        walletAddress,
+        studentHash: walletAddress,
+        registeredAt: walletMapping?.registeredAt,
+        badgeRequests,
+        badges,
+        totalRequests: badgeRequests.length,
+        approvedBadges: badges.length,
+        pendingRequests: badgeRequests.filter(req => req.status === 'pending').length
+      }
+    } catch (error) {
+      console.error("❌ Error getting student profile:", error)
+      return null
+    }
+  }
+
+  // Verify badge by hash
+  async verifyBadge(badgeHash: string): Promise<{ isValid: boolean; badge?: any; student?: any }> {
+    try {
+      console.log(`🔍 Verifying badge hash: ${badgeHash}`)
+      
+      const storage = await fileStorageService.loadData()
+      
+      // Find badge by hash
+      const badge = storage.data.badges?.find((b: any) => b.badgeHash === badgeHash || b.blockchainHash === badgeHash)
+      
+      if (!badge) {
+        console.log(`❌ Badge not found: ${badgeHash}`)
+        return { isValid: false }
+      }
+      
+      // Find associated student
+      const student = storage.data.students?.find((s: any) => s.studentHash === badge.studentHash)
+      
+      console.log(`✅ Badge verified: ${badge.courseName}`)
+      
+      return {
+        isValid: true,
+        badge,
+        student
+      }
+      
+    } catch (error) {
+      console.error('❌ Error verifying badge:', error)
+      return { isValid: false }
     }
   }
 }

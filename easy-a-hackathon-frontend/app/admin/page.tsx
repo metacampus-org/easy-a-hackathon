@@ -1,29 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useWallet } from "@/contexts/wallet-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Shield, Users, Award, Clock, CheckCircle, XCircle, Search, ArrowLeft, Eye, Check, X } from "lucide-react"
-
-interface BadgeRequest {
-  id: string
-  studentId: string
-  studentName: string
-  studentEmail: string
-  courseId: string
-  courseName: string
-  instructor: string
-  semester: string
-  requestDate: string
-  status: "pending" | "approved" | "rejected"
-  enrollmentVerified: boolean
-  completionVerified: boolean
-  gpa?: number
-}
+import { Shield, Users, Award, Clock, CheckCircle, XCircle, Search, ArrowLeft, Eye, Check, X, Hash } from "lucide-react"
+import { badgeService } from "@/lib/badge-service"
+import { useToast } from "@/components/ui/use-toast"
 
 interface InstitutionStats {
   totalRequests: number
@@ -37,83 +23,102 @@ interface InstitutionStats {
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [badgeRequests, setBadgeRequests] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const { isConnected, accountAddress, userRole } = useWallet()
+  const { toast } = useToast()
+
+  // Load badge requests on component mount
+  const loadBadgeRequests = async () => {
+    try {
+      const requests = await badgeService.getAllBadgeRequests()
+      setBadgeRequests(requests)
+    } catch (error) {
+      console.error("Error loading badge requests:", error)
+    }
+  }
+
+  useEffect(() => {
+    loadBadgeRequests()
+  }, [])
+
+
+  // Approve badge request with blockchain integration
+  const handleApproveBadge = async (requestId: string) => {
+    if (!accountAddress) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to approve badges.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    const MAIN_ADMIN_WALLET = "N4HTLJPU5CSTE475XZ42LHWPVTTR4S2L35Y2YD4VFM6V4DUJPMCWFMTNF4";
+    if (accountAddress !== MAIN_ADMIN_WALLET) {
+      toast({
+        title: "Access Denied",
+        description: "Only the main university administrator wallet can approve badge requests.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      console.log("🎓 STARTING BADGE APPROVAL PROCESS")
+      console.log("Request ID:", requestId)
+      console.log("Admin Wallet:", accountAddress)
+      console.log("Timestamp:", new Date().toISOString())
+
+      const result = await badgeService.approveBadgeRequest(requestId, accountAddress)
+      
+      console.log("🏆 BADGE APPROVAL SUCCESS!")
+      console.log("🔐 Badge Hash (ON-CHAIN):", result.badgeHash)
+      console.log("🔒 Verification Hash:", result.verificationHash)
+      console.log("📡 BLOCKCHAIN TRANSACTION ID:", result.txId)
+      console.log("🌐 LORA EXPLORER LINK: https://lora.algokit.io/testnet/transaction/" + result.txId)
+      console.log("✅ Badge successfully created and stored on blockchain!")
+
+      toast({
+        title: "Badge Approved Successfully!",
+        description: `Badge hash: ${result.badgeHash.substring(0, 16)}... | TX ID: ${result.txId}`,
+      })
+      await loadBadgeRequests()
+    } catch (error) {
+      console.error("❌ BADGE APPROVAL FAILED:", error)
+      toast({
+        title: "Badge Approval Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Mock data for badge requests
-  const [badgeRequests, setBadgeRequests] = useState<BadgeRequest[]>([
-    {
-      id: "1",
-      studentId: "STU001",
-      studentName: "John Doe",
-      studentEmail: "john.doe@university.edu",
-      courseId: "CS101",
-      courseName: "Introduction to Computer Science",
-      instructor: "Dr. Smith",
-      semester: "Fall 2024",
-      requestDate: "2024-12-01",
-      status: "pending",
-      enrollmentVerified: true,
-      completionVerified: true,
-      gpa: 3.8,
-    },
-    {
-      id: "2",
-      studentId: "STU002",
-      studentName: "Jane Smith",
-      studentEmail: "jane.smith@university.edu",
-      courseId: "MATH201",
-      courseName: "Calculus II",
-      instructor: "Prof. Johnson",
-      semester: "Fall 2024",
-      requestDate: "2024-11-28",
-      status: "pending",
-      enrollmentVerified: true,
-      completionVerified: false,
-      gpa: 3.5,
-    },
-    {
-      id: "3",
-      studentId: "STU003",
-      studentName: "Mike Wilson",
-      studentEmail: "mike.wilson@university.edu",
-      courseId: "ENG102",
-      courseName: "Advanced Writing",
-      instructor: "Dr. Williams",
-      semester: "Fall 2024",
-      requestDate: "2024-11-25",
-      status: "approved",
-      enrollmentVerified: true,
-      completionVerified: true,
-      gpa: 3.9,
-    },
+  const [mockBadgeRequests, setMockBadgeRequests] = useState<any[]>([
   ])
 
   // Mock institution statistics
   const stats: InstitutionStats = {
     totalRequests: 156,
-    pendingRequests: badgeRequests.filter((req) => req.status === "pending").length,
+    pendingRequests: badgeRequests.filter((req) => req && req.status === "pending").length,
     approvedBadges: 142,
     rejectedRequests: 12,
     activeStudents: 1250,
     totalCourses: 89,
   }
 
-  const handleApprove = (requestId: string) => {
-    setBadgeRequests((prev) =>
-      prev.map((req) => (req.id === requestId ? { ...req, status: "approved" as const } : req)),
-    )
-  }
-
-  const handleReject = (requestId: string) => {
-    setBadgeRequests((prev) =>
-      prev.map((req) => (req.id === requestId ? { ...req, status: "rejected" as const } : req)),
-    )
-  }
-
   const filteredRequests = badgeRequests.filter((request) => {
-    const matchesSearch =
-      request.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.courseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.courseName.toLowerCase().includes(searchTerm.toLowerCase())
+    if (!request) return false
+    
+    const matchesSearch = searchTerm === "" || [
+      request.studentHash,
+      request.courseId,
+      request.courseName
+    ].some(field => field && field.toLowerCase().includes(searchTerm.toLowerCase()))
 
     const matchesStatus = statusFilter === "all" || request.status === statusFilter
 
@@ -225,14 +230,7 @@ export default function AdminDashboard() {
 
 
         {/* Main Content */}
-        <Tabs defaultValue="requests" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="requests">Badge Requests</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          {/* Badge Requests Tab */}
-          <TabsContent value="requests" className="space-y-6">
+        <div className="space-y-6">
             {/* Filters */}
             <Card className="border-border">
               <CardHeader>
@@ -296,95 +294,47 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {filteredRequests.map((request) => (
-                    <div key={request.id} className="border border-border rounded-lg p-6 space-y-4">
-                      {/* Request Header */}
+                    <div key={request.id} className="border border-border rounded-lg p-4">
                       <div className="flex items-start justify-between">
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className="flex items-center space-x-2">
-                            {getStatusIcon(request.status)}
-                            <h4 className="font-semibold text-foreground">{request.studentName}</h4>
-                            {getStatusBadge(request.status)}
+                            <h4 className="font-semibold">{request.courseName}</h4>
+                            <Badge variant={request.status === 'pending' ? 'secondary' : request.status === 'approved' ? 'default' : 'destructive'}>
+                              {request.status}
+                            </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{request.studentEmail}</p>
-                        </div>
-                        <div className="text-right text-sm text-muted-foreground">
-                          <p>Requested: {new Date(request.requestDate).toLocaleDateString()}</p>
-                          <p>ID: {request.studentId}</p>
-                        </div>
-                      </div>
-
-                      {/* Course Information */}
-                      <div className="bg-muted/30 rounded-lg p-4">
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <h5 className="font-medium text-foreground mb-2">Course Details</h5>
-                            <div className="space-y-1 text-sm">
-                              <p>
-                                <span className="font-medium">Course:</span> {request.courseId} - {request.courseName}
-                              </p>
-                              <p>
-                                <span className="font-medium">Instructor:</span> {request.instructor}
-                              </p>
-                              <p>
-                                <span className="font-medium">Semester:</span> {request.semester}
-                              </p>
-                              {request.gpa && (
-                                <p>
-                                  <span className="font-medium">GPA:</span> {request.gpa}
-                                </p>
-                              )}
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <div className="flex items-center space-x-4">
+                              <span>Course: {request.courseName || 'N/A'}</span>
+                              <span>Request Date: {request.requestDate ? new Date(request.requestDate).toLocaleDateString() : 'N/A'}</span>
                             </div>
-                          </div>
-                          <div>
-                            <h5 className="font-medium text-foreground mb-2">Verification Status</h5>
-                            <div className="space-y-2">
-                              <div className="flex items-center space-x-2">
-                                {request.enrollmentVerified ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                ) : (
-                                  <XCircle className="h-4 w-4 text-red-500" />
-                                )}
-                                <span className="text-sm">Enrollment Verified</span>
+                            {request.blockchainHash && (
+                              <div className="flex items-center space-x-2 text-green-600">
+                                <CheckCircle className="h-3 w-3" />
+                                <span className="font-mono text-xs">Badge Hash: {request.blockchainHash.substring(0, 16)}...</span>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                {request.completionVerified ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                ) : (
-                                  <XCircle className="h-4 w-4 text-red-500" />
-                                )}
-                                <span className="text-sm">Course Completion Verified</span>
-                              </div>
+                            )}
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-muted-foreground">Wallet:</span>
+                              <span className="font-mono text-xs">{request.walletAddress || request.studentHash || 'N/A'}</span>
                             </div>
+                            {request.approvalDate && (
+                              <div className="text-xs text-green-600">
+                                Approved: {new Date(request.approvalDate).toLocaleDateString()} by {request.adminWallet?.substring(0, 8)}...
+                              </div>
+                            )}
                           </div>
                         </div>
+                        {request.status === 'pending' && (
+                          <Button 
+                            onClick={() => handleApproveBadge(request.id)}
+                            disabled={isLoading || !isConnected}
+                            className="min-w-[120px]"
+                          >
+                            {isLoading ? "Approving..." : "Approve Badge"}
+                          </Button>
+                        )}
                       </div>
-
-                      {/* Actions */}
-                      {request.status === "pending" && (
-                        <div className="flex justify-end space-x-3">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReject(request.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Reject
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(request.id)}
-                            disabled={!request.enrollmentVerified || !request.completionVerified}
-                          >
-                            <Check className="h-4 w-4 mr-2" />
-                            Approve Badge
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   ))}
 
@@ -397,48 +347,7 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>Request Trends</CardTitle>
-                  <CardDescription>Badge request activity over time</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 flex items-center justify-center text-muted-foreground">
-                    <p>Chart visualization would go here</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>Top Courses</CardTitle>
-                  <CardDescription>Most requested badge courses</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">CS101 - Intro to Computer Science</span>
-                      <Badge variant="secondary">24 requests</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">MATH201 - Calculus II</span>
-                      <Badge variant="secondary">18 requests</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">ENG102 - Advanced Writing</span>
-                      <Badge variant="secondary">15 requests</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </div>
   )

@@ -1,10 +1,48 @@
 # Decentralized Student Transcript Management System
 
-A blockchain-based system for managing and verifying student academic transcripts using Algorand technology. This system enables secure, transparent, and immutable record-keeping for educational institutions while providing instant verification capabilities.
+A blockchain-based system for managing and verifying student academic transcripts using Algorand. This system enables secure, transparent, and immutable record-keeping for educational institutions while providing instant verification capabilities.
 
-## 🎯 Project Overview
+## Short Summary (<150 chars)
+Algorand-based system for immutable, student-controlled transcripts with instant, global verification.
 
-This system creates a decentralized alternative to traditional transcript management, eliminating fraud, reducing verification time from weeks to seconds, and giving students full control over their academic records.
+## Full Description
+
+### Problem It Solves
+
+Transferring credits or transcripts between colleges and universities is a slow, expensive, and fragmented process:
+
+- Students often wait weeks for transcripts to be processed and mailed.
+- The administrative cost of transcript handling is extremely high, with institutions spending significant resources on manual reviews and third-party verification services.
+- Receiving institutions rely on manual checks, which makes it easy for fake transcripts or falsified records to slip through.
+- Students lack direct ownership of their records and must depend on institutions every time they need to share them.
+
+This leads to delays in admissions, transfer approvals, and job applications, while draining institutional resources and undermining trust in academic records.
+
+### Our Solution
+
+We built a Decentralized Student Transcript Management System on Algorand that directly addresses these issues:
+
+- **Immutable Records**: Academic credentials are permanently stored via Algorand smart contracts.
+- **Decentralized Verification**: Every transcript entry is cryptographically verified, eliminating the risk of fake credentials.
+- **Cost Efficiency**: By removing manual middlemen, transcript verification becomes affordable and scalable.
+- **Student Ownership**: Students control their transcript hash and decide when and where to share it.
+- **Global Portability**: Transcripts can be instantly verified across institutions and borders without extra overhead.
+
+## Technical Description
+
+### How Algorand Makes This Possible
+
+- **PyTeal Smart Contracts (Algorand AVM)**: Manage student onboarding, transcript requests, approvals, and verification through immutable logic.
+- **AlgoSDK (JavaScript)**: Handles client-side interactions with Algorand Testnet for verification and updates.
+- **Pera Wallet SDK**: Provides secure wallet-based authentication and transaction signing for students and administrators.
+- **Low Fees and Fast Finality**: Algorand processes transactions in under 5 seconds at a fraction of a cent, enabling real-time transcript operations.
+- **Privacy-Preserving Design**: Only transcript hashes are stored on-chain; sensitive student data remains securely with the issuing institution.
+
+### Why Algorand Over Other Chains
+
+- **Ethereum/EVM chains**: Gas fees and slower settlement make routine transcript updates impractical.
+- **Private blockchains**: Lack global transparency and still rely on centralized trust between institutions.
+- **Algorand**: Combines public immutability, low fees, sub-5-second settlement, and efficient AVM smart contracts, making it uniquely suited for education systems.
 
 ### Key Features
 
@@ -111,37 +149,43 @@ This system creates a decentralized alternative to traditional transcript manage
 4. System verifies cryptographic signatures
 5. Institution receives verified transcript with authenticity proof
 
-## 🧠 Smart Contract Architecture
+## Smart Contract Architecture
 
-### Contract Functions
+### Contract 1: Badge Request Manager
+**Purpose**: Handles creation of transcript or badge requests by students or administrators.
+- `create_badge_request(request_data)`: Initiates transcript entry requests.
+- Stores request data with timestamps.
 
-```python
-# Student onboarding
-onboard_student(student_data) -> student_hash
+### Contract 2: Approval Manager
+**Purpose**: Ensures only authorized institutions can approve transcript or badge requests.
+- `approve_badge_request(request_id)`: Institution admin approves pending requests.
+- Records approval status and timestamp.
 
-# Transcript management  
-update_transcript(student_hash, academic_data) -> transcript_hash
+### Contract 3: Badge Issuance Manager
+**Purpose**: Issues academic badges once approved.
+- `create_meta_badge(badge_data)`: Institution mints transcript or course completion badge.
+- Each badge is tied to a unique hash and issuance timestamp.
 
-# Verification
-verify_transcript(student_hash) -> verification_result
-```
+### Contract 4: Verification Manager
+**Purpose**: Enables third-party verification of academic credentials.
+- `verify_badge(badge_hash)`: Confirms transcript authenticity using Algorand's immutable ledger.
 
-## 🔄 Transaction Flow
+## System Interaction Flow
 
-### 1. Student Onboarding
-```
-Admin -> Smart Contract -> Blockchain -> Student Hash Generated
-```
+1. **Student Onboarding** - Admin creates a unique student hash on Algorand.
+2. **Transcript Request** - Student or admin submits course completion record as a badge request.
+3. **Approval** - Institution admin reviews and approves the request.
+4. **Issuance** - Smart contract mints a transcript badge tied to the student hash.
+5. **Verification** - External institution queries the student hash.
+   - Smart contract verifies and confirms authenticity instantly, eliminating fake transcripts.
 
-### 2. Transcript Update
-```
-Admin -> Collect Course Data -> Smart Contract -> Blockchain Storage
-```
+## Key Security Features
 
-### 3. Verification
-```
-External Institution -> Student Hash -> Smart Contract Query -> Verified Data
-```
+- **On-Chain Immutability**: Records cannot be altered once written.
+- **Fraud Elimination**: Decentralization ensures transcripts are cryptographically verified, eliminating fake ones.
+- **Auditability**: Every request, approval, and issuance is timestamped.
+- **Role-Based Access**: Only verified institution admins can approve or issue.
+- **Selective Disclosure**: Students only share transcript hashes, not raw personal data.
 
 ## 🛠️ Development
 
@@ -227,19 +271,45 @@ easy-a-hackathon-frontend/
 - [Pera Wallet Integration](https://perawallet.app/developers/)
 - [Next.js Documentation](https://nextjs.org/docs)
 
-### FAQ
+## Demo Links
+
+### Canva Slides
+[Insert Canva presentation link here]
+
+### Demo Video
+[Insert demo video link here]
+
+### Screenshots
+[Insert screenshots here]
+
+### Loom Walkthrough (with audio)
+[Insert Loom video link here]
+(Must include: repo structure, smart contract explanation, demo of everything working)
+
+## FAQ
 
 **Q: How secure is student data on the blockchain?**
-A: Personal information is hashed and encrypted. Only authorized parties with the student's hash can access records.
+A: Only transcript hashes and badge proofs are stored on-chain. Personal data remains securely off-chain with institutions, while Algorand ensures authenticity and immutability.
 
-**Q: What happens if a student loses their hash?**
-A: Institutions can regenerate access using the student's verified identity and original enrollment records.
+**Q: What happens if a student loses their transcript hash?**
+A: Institutions can regenerate access by validating the student's enrollment history.
 
-**Q: Can transcripts be modified after blockchain storage?**
-A: No, blockchain records are immutable. New entries can be added, but existing records cannot be changed.
+**Q: Can transcripts be modified after being stored on Algorand?**
+A: No. Once a transcript or badge is issued, it cannot be altered. Updates are appended as new entries, preserving an audit trail.
+
+**Q: How does this system eliminate fake transcripts?**
+A: Each transcript is cryptographically verified on Algorand. Institutions and employers can instantly confirm authenticity against the immutable ledger, making it impossible to forge.
 
 **Q: Is this FERPA compliant?**
-A: Yes, students control access to their records through private hash identifiers, maintaining privacy requirements.
+A: Yes. Students control sharing of their transcript hashes, aligning with FERPA's student privacy requirements.
+
+## Open Source Notice
+
+This project is fully open source and will remain available as open source after the hackathon.
+
+## Final Summary
+
+This project demonstrates how Algorand can modernize education by reducing transcript transfer costs, eliminating fraud, and giving students control of their academic records. By combining smart contracts, Pera Wallet integration, and instant verification, the system addresses a global problem with a scalable and sustainable blockchain solution.
 
 ---
 

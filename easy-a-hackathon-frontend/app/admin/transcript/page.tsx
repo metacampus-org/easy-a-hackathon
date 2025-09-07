@@ -6,7 +6,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,7 +23,8 @@ import {
   Hash,
   CheckCircle,
   Download,
-  Upload
+  Upload,
+  Award
 } from "lucide-react"
 import { transcriptService, CourseRecord } from "@/lib/transcript-service"
 import { badgeService } from "@/lib/badge-service"
@@ -40,9 +40,7 @@ interface OnboardStudentForm {
 }
 
 interface CourseForm {
-  courseId: string
   courseName: string
-  courseCode: string
   credits: number
   semester: string
   year: number
@@ -76,9 +74,7 @@ export default function CollegeAdminPage() {
 
   // Course form state
   const [courseForm, setCourseForm] = useState<CourseForm>({
-    courseId: "",
     courseName: "",
-    courseCode: "",
     credits: 0,
     semester: "",
     year: new Date().getFullYear(),
@@ -296,7 +292,7 @@ export default function CollegeAdminPage() {
     }
   }
 
-  const handleOnboardStudent = async () => {
+  const handleOnboardStudentWithCourse = async () => {
     if (!isConnected) {
       toast({
         title: "Wallet Required",
@@ -315,8 +311,17 @@ export default function CollegeAdminPage() {
       return
     }
 
+    if (!courseForm.courseName || !courseForm.grade || !courseForm.credits) {
+      toast({
+        title: "Course Information Required",
+        description: "Please fill in course name, grade, and credits.",
+        variant: "destructive"
+      })
+      return
+    }
+
     // Log the onboarding attempt
-    console.log("🎓 STUDENT ONBOARDING INITIATED")
+    console.log("🎓 STUDENT ONBOARDING WITH COURSE INITIATED")
     console.log("Admin Wallet:", accountAddress)
     console.log("Student Data:", {
       firstName: studentForm.firstName,
@@ -325,6 +330,7 @@ export default function CollegeAdminPage() {
       nationalId: "",
       degreeProgram: studentForm.degreeProgram || "N/A"
     })
+    console.log("Course Data:", courseForm)
     console.log("Timestamp:", new Date().toISOString())
 
     setIsLoading(true)
@@ -351,17 +357,43 @@ export default function CollegeAdminPage() {
       console.log("Student Name:", `${studentForm.firstName} ${studentForm.lastName}`)
       console.log("Blockchain Transaction:", result.txId || "Simulated")
       
+      // Now add the course to the student's transcript
+      console.log("📚 ADDING COURSE TO TRANSCRIPT")
+      const gradePoints = transcriptService.calculateGradePoints(courseForm.grade)
+      const courseWithGradePoints = { ...courseForm, gradePoints }
+      
+      await transcriptService.updateTranscript(
+        result.studentHash,
+        [courseWithGradePoints],
+        accountAddress!
+      )
+      
+      console.log("✅ COURSE ADDED TO TRANSCRIPT")
+      console.log("Course:", courseForm.courseName)
+      console.log("Grade:", courseForm.grade)
+      
       toast({
-        title: "Student Onboarded Successfully",
-        description: `Student hash: ${result.studentHash.substring(0, 16)}...`,
+        title: "Student Onboarded with Course Successfully!",
+        description: `Student and course ${courseForm.courseName} added to blockchain`,
       })
 
-      // Reset form
+      // Reset both forms
       setStudentForm({
         firstName: "",
         lastName: "",
         dateOfBirth: "",
         degreeProgram: ""
+      })
+      
+      setCourseForm({
+        courseName: "",
+        credits: 0,
+        semester: "",
+        year: new Date().getFullYear(),
+        grade: "",
+        instructor: "",
+        department: "",
+        completionDate: ""
       })
 
     } catch (error) {
@@ -382,10 +414,10 @@ export default function CollegeAdminPage() {
   }
 
   const handleAddCourse = () => {
-    if (!courseForm.courseId || !courseForm.courseName || !courseForm.grade) {
+    if (!courseForm.courseName || !courseForm.grade) {
       toast({
         title: "Required Fields Missing",
-        description: "Please fill in course ID, name, and grade.",
+        description: "Please fill in course name and grade.",
         variant: "destructive"
       })
       return
@@ -401,9 +433,7 @@ export default function CollegeAdminPage() {
     
     // Reset course form
     setCourseForm({
-      courseId: "",
       courseName: "",
-      courseCode: "",
       credits: 0,
       semester: "",
       year: new Date().getFullYear(),
@@ -415,7 +445,7 @@ export default function CollegeAdminPage() {
 
     toast({
       title: "Course Added",
-      description: `${courseForm.courseId} has been added to the transcript.`,
+      description: `${courseForm.courseName} has been added to the transcript.`,
     })
   }
 
@@ -506,56 +536,108 @@ export default function CollegeAdminPage() {
         <div className="mb-8 flex justify-between items-center">
           <h2 className="text-3xl font-bold text-foreground">Transcript Management</h2>
           
-          {/* Data Management Controls */}
+          {/* Badge Management Controls */}
           <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={handleExportData}
-              disabled={isExporting}
-              className="min-w-[120px]"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {isExporting ? "Exporting..." : "Export Data"}
-            </Button>
-            
-            <div className="relative">
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImportData}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={isImporting}
-              />
+            <Link href="/admin">
               <Button 
-                variant="outline"
-                disabled={isImporting}
-                className="min-w-[120px]"
+                variant="outline" 
+                className="min-w-[140px]"
               >
-                <Upload className="h-4 w-4 mr-2" />
-                {isImporting ? "Importing..." : "Import Data"}
+                <Award className="h-4 w-4 mr-2" />
+                Badge Management
               </Button>
-            </div>
+            </Link>
           </div>
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="onboard">Student Onboarding</TabsTrigger>
-            <TabsTrigger value="transcript">Transcript Management</TabsTrigger>
-            <TabsTrigger value="badges">Badge Approval</TabsTrigger>
-          </TabsList>
+        <div className="w-full space-y-6">
+            {/* Student Search */}
+            <Card className="border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Hash className="h-5 w-5" />
+                  <span>Student Lookup</span>
+                </CardTitle>
+                <CardDescription>
+                  Enter the student's blockchain hash to manage their transcript
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Enter student hash..."
+                      value={searchStudentHash}
+                      onChange={(e) => setSearchStudentHash(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    variant="outline"
+                    onClick={handleVerifyStudent}
+                    disabled={isVerifying || !searchStudentHash.trim()}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    {isVerifying ? "Verifying..." : "Verify Student"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Onboard Student Tab */}
-          <TabsContent value="onboard" className="space-y-6">
+            {/* Student Verification Result */}
+            {verifiedStudent && (
+              <Card className="border-green-200 bg-green-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-green-700">
+                    <CheckCircle className="h-5 w-5" />
+                    <span>Student Verified</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Student Name</p>
+                        <p className="text-green-600">
+                          {verifiedStudent.details?.personalInfo?.firstName} {verifiedStudent.details?.personalInfo?.lastName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Degree Program</p>
+                        <p className="text-green-600">{verifiedStudent.details?.personalInfo?.degreeProgram}</p>
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Current GPA</p>
+                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.gpa}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Total Credits</p>
+                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.totalCredits}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-700">Courses Completed</p>
+                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.courses?.length || 0}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-green-700">Student Hash</p>
+                      <p className="font-mono text-xs text-green-600 break-all">{verifiedStudent.hash}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="border-border">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <UserPlus className="h-5 w-5" />
-                  <span>Onboard New Student</span>
+                  <span>Onboard New Student with Course</span>
                 </CardTitle>
                 <CardDescription>
-                  Create a new student record on the Algorand blockchain. This generates a unique, verifiable identifier.
+                  Create a new student record and add their first course completion to the Algorand blockchain.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -649,13 +731,133 @@ export default function CollegeAdminPage() {
                   </Select>
                 </div>
 
+                {/* Course Information Section */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+                    <BookOpen className="h-5 w-5" />
+                    <span>First Course Completion</span>
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="courseName">Course Name *</Label>
+                        <Input
+                          id="courseName"
+                          placeholder="e.g., Introduction to Computer Science"
+                          value={courseForm.courseName}
+                          onChange={(e) => setCourseForm({...courseForm, courseName: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="credits">Credits *</Label>
+                        <Input
+                          id="credits"
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={courseForm.credits || ""}
+                          onChange={(e) => setCourseForm({...courseForm, credits: parseInt(e.target.value) || 0})}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="semester">Semester *</Label>
+                        <Select 
+                          value={courseForm.semester} 
+                          onValueChange={(value) => setCourseForm({...courseForm, semester: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select semester" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Fall">Fall</SelectItem>
+                            <SelectItem value="Spring">Spring</SelectItem>
+                            <SelectItem value="Summer">Summer</SelectItem>
+                            <SelectItem value="Winter">Winter</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="year">Year *</Label>
+                        <Input
+                          id="year"
+                          type="number"
+                          min="2020"
+                          max="2030"
+                          value={courseForm.year || ""}
+                          onChange={(e) => setCourseForm({...courseForm, year: parseInt(e.target.value) || new Date().getFullYear()})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="grade">Grade *</Label>
+                        <Select 
+                          value={courseForm.grade} 
+                          onValueChange={(value) => setCourseForm({...courseForm, grade: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select grade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="A+">A+</SelectItem>
+                            <SelectItem value="A">A</SelectItem>
+                            <SelectItem value="A-">A-</SelectItem>
+                            <SelectItem value="B+">B+</SelectItem>
+                            <SelectItem value="B">B</SelectItem>
+                            <SelectItem value="B-">B-</SelectItem>
+                            <SelectItem value="C+">C+</SelectItem>
+                            <SelectItem value="C">C</SelectItem>
+                            <SelectItem value="C-">C-</SelectItem>
+                            <SelectItem value="D+">D+</SelectItem>
+                            <SelectItem value="D">D</SelectItem>
+                            <SelectItem value="D-">D-</SelectItem>
+                            <SelectItem value="F">F</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="instructor">Instructor *</Label>
+                        <Input
+                          id="instructor"
+                          placeholder="e.g., Dr. Smith"
+                          value={courseForm.instructor}
+                          onChange={(e) => setCourseForm({...courseForm, instructor: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="department">Department *</Label>
+                        <Input
+                          id="department"
+                          placeholder="e.g., Computer Science"
+                          value={courseForm.department}
+                          onChange={(e) => setCourseForm({...courseForm, department: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="completionDate">Completion Date *</Label>
+                        <Input
+                          id="completionDate"
+                          type="date"
+                          value={courseForm.completionDate}
+                          onChange={(e) => setCourseForm({...courseForm, completionDate: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex justify-end">
                   <Button 
-                    onClick={handleOnboardStudent} 
+                    onClick={handleOnboardStudentWithCourse} 
                     disabled={isLoading || !isConnected}
-                    className="min-w-[200px]"
+                    className="min-w-[250px]"
                   >
-                    {isLoading ? "Onboarding..." : "Onboard Student"}
+                    {isLoading ? "Onboarding..." : "Onboard Student with Course"}
                   </Button>
                 </div>
 
@@ -691,364 +893,11 @@ export default function CollegeAdminPage() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Manage Transcript Tab */}
-          <TabsContent value="transcript" className="space-y-6">
-            {/* Student Search */}
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Hash className="h-5 w-5" />
-                  <span>Student Lookup</span>
-                </CardTitle>
-                <CardDescription>
-                  Enter the student's blockchain hash to manage their transcript
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex space-x-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Enter student hash..."
-                      value={searchStudentHash}
-                      onChange={(e) => setSearchStudentHash(e.target.value)}
-                    />
-                  </div>
-                  <Button 
-                    variant="outline"
-                    onClick={handleVerifyStudent}
-                    disabled={isVerifying || !searchStudentHash.trim()}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    {isVerifying ? "Verifying..." : "Verify Student"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Transcript Management Section */}
 
-            {/* Student Verification Result */}
-            {verifiedStudent && (
-              <Card className="border-green-200 bg-green-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-green-700">
-                    <CheckCircle className="h-5 w-5" />
-                    <span>Student Verified</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-green-700">Student Name</p>
-                        <p className="text-green-600">
-                          {verifiedStudent.details?.personalInfo?.firstName} {verifiedStudent.details?.personalInfo?.lastName}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-green-700">Degree Program</p>
-                        <p className="text-green-600">{verifiedStudent.details?.personalInfo?.degreeProgram}</p>
-                      </div>
-                    </div>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-green-700">Current GPA</p>
-                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.gpa}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-green-700">Total Credits</p>
-                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.totalCredits}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-green-700">Courses Completed</p>
-                        <p className="text-lg font-semibold text-green-600">{verifiedStudent.verification.courses?.length || 0}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-green-700">Student Hash</p>
-                      <p className="font-mono text-xs text-green-600 break-all">{verifiedStudent.hash}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
-            {/* Add Course */}
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <BookOpen className="h-5 w-5" />
-                  <span>Add Course to Transcript</span>
-                </CardTitle>
-                <CardDescription>
-                  Add course completion records to the student's transcript
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="courseId">Course ID *</Label>
-                    <Input
-                      id="courseId"
-                      placeholder="e.g., CS101"
-                      value={courseForm.courseId}
-                      onChange={(e) => setCourseForm({...courseForm, courseId: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="courseCode">Course Code *</Label>
-                    <Input
-                      id="courseCode"
-                      placeholder="e.g., CS101"
-                      value={courseForm.courseCode}
-                      onChange={(e) => setCourseForm({...courseForm, courseCode: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="credits">Credits *</Label>
-                    <Input
-                      id="credits"
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={courseForm.credits || ""}
-                      onChange={(e) => setCourseForm({...courseForm, credits: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="courseName">Course Name *</Label>
-                  <Input
-                    id="courseName"
-                    placeholder="e.g., Introduction to Computer Science"
-                    value={courseForm.courseName}
-                    onChange={(e) => setCourseForm({...courseForm, courseName: e.target.value})}
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="semester">Semester *</Label>
-                    <Select 
-                      value={courseForm.semester} 
-                      onValueChange={(value) => setCourseForm({...courseForm, semester: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select semester" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Fall">Fall</SelectItem>
-                        <SelectItem value="Spring">Spring</SelectItem>
-                        <SelectItem value="Summer">Summer</SelectItem>
-                        <SelectItem value="Winter">Winter</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="year">Year *</Label>
-                    <Input
-                      id="year"
-                      type="number"
-                      min="2020"
-                      max="2030"
-                      value={courseForm.year || ""}
-                      onChange={(e) => setCourseForm({...courseForm, year: parseInt(e.target.value) || new Date().getFullYear()})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="grade">Grade *</Label>
-                    <Select 
-                      value={courseForm.grade} 
-                      onValueChange={(value) => setCourseForm({...courseForm, grade: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select grade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="A+">A+</SelectItem>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="A-">A-</SelectItem>
-                        <SelectItem value="B+">B+</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="B-">B-</SelectItem>
-                        <SelectItem value="C+">C+</SelectItem>
-                        <SelectItem value="C">C</SelectItem>
-                        <SelectItem value="C-">C-</SelectItem>
-                        <SelectItem value="D+">D+</SelectItem>
-                        <SelectItem value="D">D</SelectItem>
-                        <SelectItem value="D-">D-</SelectItem>
-                        <SelectItem value="F">F</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="instructor">Instructor *</Label>
-                    <Input
-                      id="instructor"
-                      placeholder="e.g., Dr. Smith"
-                      value={courseForm.instructor}
-                      onChange={(e) => setCourseForm({...courseForm, instructor: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="department">Department *</Label>
-                    <Input
-                      id="department"
-                      placeholder="e.g., Computer Science"
-                      value={courseForm.department}
-                      onChange={(e) => setCourseForm({...courseForm, department: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="completionDate">Completion Date *</Label>
-                  <Input
-                    id="completionDate"
-                    type="date"
-                    value={courseForm.completionDate}
-                    onChange={(e) => setCourseForm({...courseForm, completionDate: e.target.value})}
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <Button onClick={handleAddCourse}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Course
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Course List */}
-            {courses.length > 0 && (
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>Current Transcript ({courses.length} courses)</CardTitle>
-                  <CardDescription>
-                    Courses to be added to the blockchain transcript. Current GPA: {calculateGPA()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {courses.map((course, index) => (
-                      <div key={index} className="border border-border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-semibold">{course.courseId} - {course.courseName}</h4>
-                              <Badge variant={course.grade.startsWith('A') ? 'default' : course.grade.startsWith('B') ? 'secondary' : 'outline'}>
-                                {course.grade}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground grid md:grid-cols-2 gap-2">
-                              <span>Credits: {course.credits}</span>
-                              <span>Semester: {course.semester} {course.year}</span>
-                              <span>Instructor: {course.instructor}</span>
-                              <span>Department: {course.department}</span>
-                            </div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleRemoveCourse(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-end mt-6">
-                    <Button 
-                      onClick={handleUpdateTranscript}
-                      disabled={isLoading || !isConnected || !searchStudentHash}
-                      className="min-w-[200px]"
-                    >
-                      {isLoading ? "Updating..." : "Update Transcript on Blockchain"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Badge Approval Tab */}
-          <TabsContent value="badges" className="space-y-6">
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5" />
-                  <span>Badge Request Approval</span>
-                </CardTitle>
-                <CardDescription>
-                  Review and approve student badge requests. Approved badges will be created on the blockchain.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {badgeRequests.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No badge requests found</p>
-                    <p className="text-sm">Students can request badges from their dashboard</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {badgeRequests.map((request) => (
-                      <div key={request.id} className="border border-border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <h4 className="font-semibold">{request.courseName}</h4>
-                              <Badge variant={request.status === 'pending' ? 'secondary' : request.status === 'approved' ? 'default' : 'destructive'}>
-                                {request.status}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground space-y-1">
-                              <div className="flex items-center space-x-4">
-                                <span>Course ID: {request.courseId}</span>
-                                <span>Request Date: {new Date(request.requestDate).toLocaleDateString()}</span>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Hash className="h-3 w-3" />
-                                <span className="font-mono text-xs">{request.studentHash.substring(0, 16)}...</span>
-                              </div>
-                              {request.blockchainHash && (
-                                <div className="flex items-center space-x-2 text-green-600">
-                                  <CheckCircle className="h-3 w-3" />
-                                  <span className="font-mono text-xs">Badge Hash: {request.blockchainHash.substring(0, 16)}...</span>
-                                </div>
-                              )}
-                              {request.approvalDate && (
-                                <div className="text-xs text-green-600">
-                                  Approved: {new Date(request.approvalDate).toLocaleDateString()} by {request.adminWallet?.substring(0, 8)}...
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          {request.status === 'pending' && (
-                            <Button 
-                              onClick={() => handleApproveBadge(request.id)}
-                              disabled={isLoading || !isConnected}
-                              className="min-w-[120px]"
-                            >
-                              {isLoading ? "Approving..." : "Approve Badge"}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </div>
   )

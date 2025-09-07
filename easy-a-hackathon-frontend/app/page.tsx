@@ -134,45 +134,65 @@ export default function HomePage() {
       <section className="py-16 px-4">
         <div className="container mx-auto">
           <h3 className="text-3xl font-bold text-center mb-12 text-foreground">Why Blockchain Transcripts?</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="border-border">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border-blue-200 hover:border-blue-400 transition-colors">
               <CardHeader>
-                <Shield className="h-12 w-12 text-primary mb-4" />
-                <CardTitle>Immutable Security</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="h-5 w-5 text-blue-600" />
+                  <span>New Student</span>
+                </CardTitle>
                 <CardDescription>
-                  Academic records stored on Algorand blockchain ensure permanent, tamper-proof transcripts that cannot be forged or modified
+                  Register as a new student to get your unique hash and access academic services
                 </CardDescription>
               </CardHeader>
+              <CardContent>
+                <Link href="/onboarding">
+                  <Button className="w-full" variant="outline">
+                    <GraduationCap className="h-4 w-4 mr-2" />
+                    Register Now
+                  </Button>
+                </Link>
+              </CardContent>
             </Card>
 
-            <Card className="border-border">
+            <Card className="border-primary/20 hover:border-primary/40 transition-colors">
               <CardHeader>
-                <Zap className="h-12 w-12 text-accent mb-4" />
-                <CardTitle>Instant Verification</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  <span>Student Portal</span>
+                </CardTitle>
                 <CardDescription>
-                  Eliminate weeks of transcript verification delays. Get instant, cryptographic proof of academic achievements
+                  Access your academic records, request badges, and manage your educational credentials
                 </CardDescription>
               </CardHeader>
+              <CardContent>
+                <Link href="/student">
+                  <Button className="w-full">
+                    <User className="h-4 w-4 mr-2" />
+                    Enter Student Portal
+                  </Button>
+                </Link>
+              </CardContent>
             </Card>
 
-            <Card className="border-border">
+            <Card className="border-primary/20 hover:border-primary/40 transition-colors">
               <CardHeader>
-                <Lock className="h-12 w-12 text-primary mb-4" />
-                <CardTitle>Student Privacy</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <span>University Portal</span>
+                </CardTitle>
                 <CardDescription>
-                  Students control access to their records via unique hash identifiers, maintaining privacy while enabling verification
+                  Manage student records, approve badge requests, and oversee institutional credentials
                 </CardDescription>
               </CardHeader>
-            </Card>
-
-            <Card className="border-border">
-              <CardHeader>
-                <Users className="h-12 w-12 text-accent mb-4" />
-                <CardTitle>Global Recognition</CardTitle>
-                <CardDescription>
-                  Internationally verifiable transcripts enable seamless student mobility between institutions worldwide
-                </CardDescription>
-              </CardHeader>
+              <CardContent>
+                <Link href="/admin">
+                  <Button className="w-full" variant="outline">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Enter University Portal
+                  </Button>
+                </Link>
+              </CardContent>
             </Card>
 
             <Card className="border-border">

@@ -1,33 +1,67 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { 
-  User, 
-  ArrowLeft, 
-  Download,
-  Share,
-  Hash,
-  GraduationCap,
-  Award,
-  Eye,
-  Copy,
-  CheckCircle
-} from "lucide-react"
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { useToast } from '@/hooks/use-toast'
+import { Hash, Download, Share2, Award, BookOpen, TrendingUp, Calendar, GraduationCap, CheckCircle, Wallet, Copy, Eye, Share, Shield } from 'lucide-react'
+import { WalletButton } from '@/components/wallet-button'
+import { useWallet } from '@/contexts/wallet-context'
+import { badgeService } from '@/lib/badge-service'
 import { transcriptService, type TranscriptVerificationResult } from "@/lib/transcript-service"
-import { useToast } from "@/components/ui/use-toast"
-import { WalletButton } from "@/components/wallet-button"
 
 export default function StudentPortalPage() {
   const [studentHash, setStudentHash] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [transcriptData, setTranscriptData] = useState<TranscriptVerificationResult | null>(null)
+  const [studentProfile, setStudentProfile] = useState<any>(null)
+  const [courseName, setCourseName] = useState("")
+  const [badgeStudentHash, setBadgeStudentHash] = useState("")
+  const [isRequestingBadge, setIsRequestingBadge] = useState(false)
+  
+  // Hash lookup states
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [dateOfBirth, setDateOfBirth] = useState("")
+  const [isLookingUpHash, setIsLookingUpHash] = useState(false)
+  const [foundHash, setFoundHash] = useState("")
+  
   const { toast } = useToast()
+  const { isConnected, accountAddress } = useWallet()
+
+  // Load student profile when wallet is connected
+  useEffect(() => {
+    if (isConnected && accountAddress) {
+      loadStudentProfile()
+      setBadgeStudentHash(accountAddress) // Auto-populate badge request with wallet address
+    } else {
+      setStudentProfile(null)
+      setBadgeStudentHash("")
+    }
+  }, [isConnected, accountAddress])
+
+  const loadStudentProfile = async () => {
+    if (!accountAddress) return
+    
+    try {
+      const profile = await badgeService.getStudentProfile(accountAddress)
+      setStudentProfile(profile)
+      
+      if (profile) {
+        setStudentHash(accountAddress) // Auto-populate with wallet address
+        toast({
+          title: "Welcome Back!",
+          description: `Found ${profile.totalRequests} badge requests and ${profile.approvedBadges} approved badges.`,
+        })
+      }
+    } catch (error) {
+      console.error("Error loading student profile:", error)
+    }
+  }
 
   const handleViewTranscript = async () => {
     if (!studentHash.trim()) {
@@ -65,12 +99,79 @@ export default function StudentPortalPage() {
     }
   }
 
-  const handleCopyHash = () => {
-    navigator.clipboard.writeText(studentHash)
-    toast({
-      title: "Hash Copied",
-      description: "Your student hash has been copied to clipboard.",
-    })
+  const handleCopyHash = async () => {
+    if (studentHash.trim()) {
+      try {
+        await navigator.clipboard.writeText(studentHash)
+        toast({
+          title: "Hash Copied!",
+          description: "Student hash copied to clipboard",
+        })
+      } catch (error) {
+        toast({
+          title: "Copy Failed",
+          description: "Could not copy hash to clipboard",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const handleFindMyHash = async () => {
+    if (!firstName.trim() || !lastName.trim() || !dateOfBirth.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields to find your student hash",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLookingUpHash(true)
+    try {
+      const hash = await badgeService.findStudentHash(firstName, lastName, dateOfBirth)
+      if (hash) {
+        setFoundHash(hash)
+        setStudentHash(hash) // Auto-populate the transcript lookup field
+        setBadgeStudentHash(hash) // Auto-populate the badge request field
+        toast({
+          title: "Student Hash Found!",
+          description: "Your student hash has been found and auto-filled in the transcript and badge request forms below",
+        })
+      } else {
+        toast({
+          title: "Student Not Found",
+          description: "No student record found with the provided information. Please check your details or contact the university.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Lookup Failed",
+        description: "Failed to search for student hash. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLookingUpHash(false)
+    }
+  }
+
+  const handleCopyFoundHash = async () => {
+    if (foundHash) {
+      try {
+        await navigator.clipboard.writeText(foundHash)
+        toast({
+          title: "Hash Copied!",
+          description: "Your student hash has been copied to clipboard",
+        })
+      } catch (error) {
+        toast({
+          title: "Copy Failed",
+          description: "Could not copy hash to clipboard",
+          variant: "destructive",
+        })
+      }
+    }
   }
 
   const handleShareTranscript = () => {
@@ -95,6 +196,69 @@ export default function StudentPortalPage() {
         title: "Verification Info Copied",
         description: "Verification details have been copied to clipboard.",
       })
+    }
+  }
+
+  const handleRequestBadge = async () => {
+    if (!isConnected || !accountAddress) {
+      toast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to request a badge.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!courseName.trim()) {
+      toast({
+        title: "Course Name Required",
+        description: "Please enter a course name for your badge request.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!badgeStudentHash.trim()) {
+      toast({
+        title: "Student Hash Required",
+        description: "Please enter your student hash for the badge request.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsRequestingBadge(true)
+    try {
+      const badgeRequest = {
+        courseName: courseName.trim(),
+        walletAddress: accountAddress,
+        studentHash: badgeStudentHash.trim(),
+        additionalInfo: `Badge request for ${courseName.trim()} - Student Hash: ${badgeStudentHash.trim()}`,
+        requestDate: new Date().toISOString(),
+        status: 'pending'
+      }
+
+      await badgeService.createBadgeRequest(badgeRequest)
+      
+      toast({
+        title: "Badge Request Submitted",
+        description: `Your badge request for ${courseName.trim()} has been submitted successfully.`,
+      })
+
+      setCourseName("")
+      setBadgeStudentHash(accountAddress || "") // Reset to wallet address
+      // Reload student profile to show new request
+      await loadStudentProfile()
+
+    } catch (error) {
+      console.error("Error creating badge request:", error)
+      toast({
+        title: "Request Failed",
+        description: "Failed to submit your badge request. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsRequestingBadge(false)
     }
   }
 
@@ -142,12 +306,14 @@ export default function StudentPortalPage() {
   }
 
   const calculateGradeDistribution = () => {
-    if (!transcriptData || transcriptData.courses.length === 0) return {}
+    if (!transcriptData || !transcriptData.courses || !Array.isArray(transcriptData.courses) || transcriptData.courses.length === 0) return {}
     
     const distribution: { [key: string]: number } = {}
     transcriptData.courses.forEach(course => {
-      const gradeCategory = course.grade.charAt(0)
-      distribution[gradeCategory] = (distribution[gradeCategory] || 0) + 1
+      if (course && course.grade) {
+        const gradeCategory = course.grade.charAt(0)
+        distribution[gradeCategory] = (distribution[gradeCategory] || 0) + 1
+      }
     })
     
     return distribution
@@ -157,19 +323,157 @@ export default function StudentPortalPage() {
 
   return (
     <div className="min-h-screen bg-background">
-
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-foreground">My Transcript</h2>
-          <Link href="/student/request">
-            <Button className="flex items-center gap-2">
-              <Award className="h-4 w-4" />
-              Request New Badge
-            </Button>
-          </Link>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-foreground">Student Dashboard</h2>
         </div>
 
-        {/* Access Form */}
+        {/* Wallet Status & Profile */}
+        {!isConnected && (
+          <Card className="border-amber-200 bg-amber-50 mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-amber-700">
+                <Wallet className="h-5 w-5" />
+                <span>Connect Your Wallet</span>
+              </CardTitle>
+              <CardDescription>
+                Connect your wallet to automatically access your student records and badges.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WalletButton />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Find My Student Hash Section */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Hash className="h-5 w-5" />
+              <span>Find My Student Hash</span>
+            </CardTitle>
+            <CardDescription>
+              Don't know your student hash? Enter your personal information to find it and share with your university.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name *</Label>
+                <Input
+                  id="firstName"
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name *</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="flex space-x-4">
+              <Button 
+                onClick={handleFindMyHash}
+                disabled={isLookingUpHash || !firstName.trim() || !lastName.trim() || !dateOfBirth.trim()}
+                className="min-w-[140px]"
+              >
+                {isLookingUpHash ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Hash className="h-4 w-4 mr-2" />
+                    Find My Hash
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {foundHash && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-green-800">Your Student Hash Found!</h4>
+                    <p className="text-sm text-green-600 mt-1">Share this hash with your university for transcript access</p>
+                    <code className="block mt-2 p-2 bg-green-100 rounded text-xs break-all">{foundHash}</code>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyFoundHash}
+                    className="ml-4"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Badge Requests Section */}
+        {isConnected && studentProfile && studentProfile.badgeRequests && studentProfile.badgeRequests.length > 0 && (
+          <Card className="border-border mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Award className="h-5 w-5" />
+                <span>My Badge Requests</span>
+              </CardTitle>
+              <CardDescription>
+                Track the status of your badge requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {studentProfile.badgeRequests.map((request: any) => (
+                  <div key={request.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="font-semibold">{request.courseName}</h4>
+                          <Badge variant={request.status === 'pending' ? 'secondary' : request.status === 'approved' ? 'default' : 'destructive'}>
+                            {request.status}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <div>Course: {request.courseName}</div>
+                          <div>Request Date: {new Date(request.requestDate).toLocaleDateString()}</div>
+                          {request.blockchainHash && (
+                            <div className="flex items-center space-x-2 text-green-600">
+                              <CheckCircle className="h-3 w-3" />
+                              <span className="font-mono text-xs">Badge Hash: {request.blockchainHash.substring(0, 16)}...</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Access Your Transcript */}
         <Card className="border-border mb-8">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -187,7 +491,7 @@ export default function StudentPortalPage() {
                 <div className="flex-1">
                   <Input
                     id="studentHash"
-                    placeholder="Enter your student blockchain hash..."
+                    placeholder="WYD2NEUBGOYNUA3PGB6U3FXU2ETUDV57SWAIWBBISGI4JJWVO2SWKFKSNA"
                     value={studentHash}
                     onChange={(e) => setStudentHash(e.target.value)}
                   />
@@ -241,189 +545,206 @@ export default function StudentPortalPage() {
                     <span>Academic Summary</span>
                   </CardTitle>
                   <CardDescription>
-                    Your verified academic performance overview
+                    Verified academic record from blockchain
                   </CardDescription>
                 </div>
-                <div className="flex space-x-2">
-                  <Button onClick={handleShareTranscript} variant="outline">
-                    <Share className="h-4 w-4 mr-2" />
-                    Share for Verification
-                  </Button>
-                  <Button onClick={handleDownloadTranscript} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
+                <Badge variant="default" className="bg-green-600">
+                  Verified ✓
+                </Badge>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-4 gap-6 mb-6">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">{transcriptData.gpa}</div>
-                    <div className="text-sm text-muted-foreground">Cumulative GPA</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">{transcriptData.totalCredits}</div>
-                    <div className="text-sm text-muted-foreground">Total Credits</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">{transcriptData.courses.length}</div>
-                    <div className="text-sm text-muted-foreground">Courses Completed</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">
-                      {transcriptData.courses.filter(c => c.grade.startsWith('A')).length}
-                    </div>
-                    <div className="text-sm text-muted-foreground">A Grades</div>
-                  </div>
-                </div>
-
-                {/* Grade Distribution */}
-                {Object.keys(gradeDistribution).length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-foreground mb-3">Grade Distribution</h4>
-                    <div className="flex space-x-4">
-                      {Object.entries(gradeDistribution).map(([grade, count]) => (
-                        <div key={grade} className="flex items-center space-x-2">
-                          <Badge className={getGradeColor(grade)}>{grade}</Badge>
-                          <span className="text-sm text-muted-foreground">{count} courses</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Verification Status */}
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span>Blockchain Verification</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Record verified on Algorand blockchain</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Institution digitally signed</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Immutable and tamper-proof</span>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground">GPA</div>
+                    <div className="text-2xl font-bold text-foreground">{transcriptData.gpa}</div>
                   </div>
                   <div className="space-y-2">
-                    <div className="text-sm">
-                      <span className="font-medium">Last Verified:</span> {new Date(transcriptData.lastVerified).toLocaleString()}
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-medium">Verification Hash:</span>
-                      <code className="ml-2 bg-muted px-2 py-1 rounded text-xs font-mono">
-                        {transcriptData.transcriptHash.substring(0, 16)}...
-                      </code>
-                    </div>
+                    <div className="text-sm font-medium text-muted-foreground">Total Credits</div>
+                    <div className="text-2xl font-bold text-foreground">{transcriptData.totalCredits}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground">Courses Completed</div>
+                    <div className="text-2xl font-bold text-foreground">{transcriptData.courses?.length || 0}</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Course History */}
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Award className="h-5 w-5" />
-                  <span>Course History</span>
-                </CardTitle>
-                <CardDescription>
-                  Complete record of your academic coursework
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {transcriptData.courses
-                    .sort((a, b) => new Date(b.completionDate).getTime() - new Date(a.completionDate).getTime())
-                    .map((course, index) => (
-                    <div key={index} className="border border-border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="font-semibold">{course.courseCode} - {course.courseName}</h4>
-                            <Badge className={getGradeColor(course.grade)}>
-                              {course.grade}
-                            </Badge>
-                          </div>
-                          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-muted-foreground">
-                            <div>
-                              <span className="font-medium">Credits:</span> {course.credits}
+            {/* Course List */}
+            {transcriptData.courses && transcriptData.courses.length > 0 && (
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <BookOpen className="h-5 w-5" />
+                    <span>Course History</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Complete academic course record
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {transcriptData.courses.map((course, index) => (
+                      <div key={index} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <h4 className="font-semibold text-foreground">{course.courseName}</h4>
+                              <Badge variant={
+                                course.grade === 'A' || course.grade === 'A+' ? 'default' :
+                                course.grade === 'B' || course.grade === 'B+' || course.grade === 'B-' ? 'secondary' :
+                                'outline'
+                              }>
+                                {course.grade}
+                              </Badge>
                             </div>
-                            <div>
-                              <span className="font-medium">Semester:</span> {course.semester} {course.year}
-                            </div>
-                            <div>
-                              <span className="font-medium">Instructor:</span> {course.instructor}
-                            </div>
-                            <div>
-                              <span className="font-medium">Department:</span> {course.department}
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              <div>Instructor: {course.instructor}</div>
+                              <div>Department: {course.department}</div>
+                              <div>Semester: {course.semester} {course.year}</div>
+                              <div>Credits: {course.credits}</div>
+                              <div>Completed: {new Date(course.completionDate).toLocaleDateString()}</div>
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            <span className="font-medium">Completed:</span> {new Date(course.completionDate).toLocaleDateString()}
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-foreground">{course.gradePoints}</div>
+                            <div className="text-xs text-muted-foreground">Grade Points</div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-semibold text-primary">{course.gradePoints}</div>
-                          <div className="text-xs text-muted-foreground">Grade Points</div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                {transcriptData.courses.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No courses found in your transcript.</p>
+                    ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
+
           </div>
         )}
 
-        {/* Help Section */}
-        <Card className="border-border mt-8">
-          <CardHeader>
-            <CardTitle>Important Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">About Your Blockchain Transcript:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Your academic record is permanently stored on the Algorand blockchain</li>
-                  <li>• Records cannot be modified or deleted once written to the blockchain</li>
-                  <li>• You can share your student hash with any institution for instant verification</li>
-                  <li>• All data is cryptographically secured and timestamped</li>
-                </ul>
+        {/* Blockchain Transaction Details */}
+        {isConnected && studentProfile && studentProfile.approvedBadges && studentProfile.approvedBadges.length > 0 && (
+          <Card className="border-border mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5" />
+                <span>Blockchain Verification</span>
+              </CardTitle>
+              <CardDescription>
+                View your badges on the Algorand blockchain
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {studentProfile.approvedBadges.map((badge: any) => (
+                  <div key={badge.badgeHash} className="border rounded-lg p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">{badge.courseName}</h4>
+                        <Badge variant="default" className="bg-green-600">
+                          Verified ✓
+                        </Badge>
+                      </div>
+                      
+                      {badge.blockchainTxId && (
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-muted-foreground">Transaction ID</div>
+                          <div className="flex items-center space-x-2">
+                            <code className="flex-1 p-2 bg-muted rounded text-xs font-mono break-all">
+                              {badge.blockchainTxId}
+                            </code>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`https://lora.algokit.io/testnet/transaction/${badge.blockchainTxId}`, '_blank')}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View on Lora
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-muted-foreground">
+                        Issued: {new Date(badge.issueDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <h4 className="font-medium mb-2">Sharing Your Transcript:</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Use the "Share for Verification" button to get verification instructions</li>
-                  <li>• Provide your student hash to institutions for instant verification</li>
-                  <li>• Download your transcript data for offline access</li>
-                  <li>• Your hash never expires and remains permanently valid</li>
-                </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Badge Request Section */}
+        {isConnected && (
+          <Card className="border-border mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Award className="h-5 w-5" />
+                <span>Request New Badge</span>
+              </CardTitle>
+              <CardDescription>
+                Submit a request for a course completion badge
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="courseName">Course Name *</Label>
+                <Input
+                  id="courseName"
+                  placeholder="Enter the course name (e.g., Calculus II, Computer Science 101)"
+                  value={courseName}
+                  onChange={(e) => setCourseName(e.target.value)}
+                />
               </div>
-            </div>
-          </CardContent>
-        </Card>
+
+              <div className="space-y-2">
+                <Label htmlFor="badgeStudentHash">Student Hash *</Label>
+                <Input
+                  id="badgeStudentHash"
+                  placeholder="WYD2NEUBGOYNUA3PGB6U3FXU2ETUDV57SWAIWBBISGI4JJWVO2SWKFKSNA"
+                  value={badgeStudentHash}
+                  onChange={(e) => setBadgeStudentHash(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  This should be your unique student identifier used for academic records
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <Award className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-800 mb-1">Badge Request Process</h4>
+                    <p className="text-sm text-blue-700">
+                      Your badge request will be submitted to the university for verification. 
+                      Once approved, your badge will be minted on the blockchain and appear in your profile.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleRequestBadge}
+                disabled={isRequestingBadge || !courseName.trim() || !badgeStudentHash.trim()}
+                className="w-full"
+              >
+                {isRequestingBadge ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Submitting Request...
+                  </>
+                ) : (
+                  <>
+                    <Award className="h-4 w-4 mr-2" />
+                    Submit Badge Request
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
       </div>
     </div>
   )
