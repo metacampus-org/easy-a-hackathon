@@ -1,9 +1,14 @@
 # Student Transcript Management Smart Contract for Algorand
 # This PyTeal contract manages student academic records on the Algorand blockchain
 
-from pyteal import *
+from pyteal import (
+    Bytes, Int, Expr, Return, Seq, App,
+    Txn, Global, Assert, Concat, Mode,
+    compileTeal, TealType, Cond, If, And,
+    Itob
+)
 
-def approval_program():
+def approval_program() -> Expr:
     """
     Main approval program for the Student Transcript Management smart contract.
     
@@ -11,6 +16,14 @@ def approval_program():
     - Student onboarding (creating unique student records)
     - Transcript updates (adding/modifying academic data)
     - Transcript verification (reading blockchain data)
+    
+    Returns:
+        Expr: A PyTeal expression representing the approval program
+    
+    Note:
+        All operations are atomic and stateless between calls
+        Box storage is used for larger data items
+        Global state is used for contract metadata
     """
     
     # Application state keys
@@ -29,15 +42,20 @@ def approval_program():
     # Student onboarding operation
     on_onboard_student = Seq([
         # Verify the caller is authorized (institution admin)
-        Assert(Txn.sender() == Global.creator_address()),
+        Assert(
+            And(
+                Txn.sender() == Global.creator_address(),
+                Txn.application_args.length() == Int(2)
+            )
+        ),
         
-        # Extract student data from application arguments
-        # App args: [operation, student_data_json]
-        Assert(Txn.application_args.length() == Int(2)),
+        # Verify student hash doesn't already exist
+        Assert(
+            App.globalGet(Concat(student_hash_key, Txn.application_args[1])) == Int(0)
+        ),
         
-        # Store student record in global state using student hash as key
-        # In practice, this would use box storage for larger data
-        App.globalPut(
+        # Store student record in box storage for larger data
+        App.box_put(
             Concat(student_hash_key, Txn.application_args[1]),
             Txn.application_args[1]
         ),
@@ -48,10 +66,10 @@ def approval_program():
             App.globalGet(Bytes("total_students")) + Int(1)
         ),
         
-        # Set timestamp
-        App.globalPut(
+        # Set timestamp using box storage for audit trail
+        App.box_put(
             Concat(last_updated_key, Txn.application_args[1]),
-            Global.latest_timestamp()
+            Itob(Global.latest_timestamp())
         ),
         
         Return(Int(1))
