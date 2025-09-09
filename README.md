@@ -1,11 +1,9 @@
-# Decentralized Student Transcript Management System
+# Decentralized Transcripting System
 
 A blockchain-based system for managing and verifying student academic transcripts using Algorand. This system enables secure, transparent, and immutable record-keeping for educational institutions while providing instant verification capabilities.
 
-## Short Summary (<150 chars)
-Algorand-based system for immutable, student-controlled transcripts with instant, global verification.
-
-## Full Description
+## Short Summary
+A Decentralized Transcripting System for immutable, student-controlled transcripts with instant, global verification and granularity to individual Student Learning Outcomes(SLOs).
 
 ### Problem It Solves
 
@@ -20,17 +18,15 @@ This leads to delays in admissions, transfer approvals, and job applications, wh
 
 ### Our Solution
 
-We built a Decentralized Student Transcript Management System on Algorand that directly addresses these issues:
+A Decentralized Transcripting System that directly addresses these issues:
 
 - **Immutable Records**: Academic credentials are permanently stored via Algorand smart contracts.
 - **Decentralized Verification**: Every transcript entry is cryptographically verified, eliminating the risk of fake credentials.
-- **Cost Efficiency**: By removing manual middlemen, transcript verification becomes affordable and scalable.
-- **Student Ownership**: Students control their transcript hash and decide when and where to share it.
+- **Cost Efficiency**: By removing middlemen, transcript verification becomes affordable and scalable.
+- **Student Ownership**: Students control their transcripts and decide when and where to share them.
 - **Global Portability**: Transcripts can be instantly verified across institutions and borders without extra overhead.
 
 ## Technical Description
-
-### How Algorand Makes This Possible
 
 - **PyTeal Smart Contracts (Algorand AVM)**: Manage student onboarding, transcript requests, approvals, and verification through immutable logic.
 - **AlgoSDK (JavaScript)**: Handles client-side interactions with Algorand Testnet for verification and updates.
@@ -38,7 +34,7 @@ We built a Decentralized Student Transcript Management System on Algorand that d
 - **Low Fees and Fast Finality**: Algorand processes transactions in under 5 seconds at a fraction of a cent, enabling real-time transcript operations.
 - **Privacy-Preserving Design**: Only transcript hashes are stored on-chain; sensitive student data remains securely with the issuing institution.
 
-### Why Algorand Over Other Chains
+### The Drawbacks of Other Chains
 
 - **Ethereum/EVM chains**: Gas fees and slower settlement make routine transcript updates impractical.
 - **Private blockchains**: Lack global transparency and still rely on centralized trust between institutions.
@@ -143,8 +139,8 @@ We built a Decentralized Student Transcript Management System on Algorand that d
 - **Immutability**: Records cannot be altered once written to blockchain
 
 ### Verification Process
-1. Student provides their unique hash to institution
-2. Institution queries Algorand blockchain using hash
+1. Student provides their information to the institution
+2. Institution queries Algorand blockchain
 3. Smart contract returns encrypted academic data
 4. System verifies cryptographic signatures
 5. Institution receives verified transcript with authenticity proof
@@ -271,20 +267,8 @@ easy-a-hackathon-frontend/
 - [Pera Wallet Integration](https://perawallet.app/developers/)
 - [Next.js Documentation](https://nextjs.org/docs)
 
-## Demo Links
-
-### Canva Slides
-[Insert Canva presentation link here]
-
 ### Demo Video
-[Insert demo video link here]
-
-### Screenshots
-[Insert screenshots here]
-
-### Loom Walkthrough (with audio)
-[Insert Loom video link here]
-(Must include: repo structure, smart contract explanation, demo of everything working)
+[metaCAMPUS](https://drive.google.com/file/d/1G789QVUFMOTKkMTlcoXe3GHM2r7CZGvU/view?usp=sharing)
 
 ## FAQ
 
