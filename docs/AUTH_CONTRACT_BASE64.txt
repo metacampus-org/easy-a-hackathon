@@ -1,0 +1,15 @@
+╔══════════════════════════════════════════════════════════════╗
+║   AUTHENTICATION CONTRACT - COPY THESE EXACTLY               ║
+╚══════════════════════════════════════════════════════════════╝
+
+APPROVAL PROGRAM (copy everything below this line):
+I3ByYWdtYSB2ZXJzaW9uIDYKdHhuIEFwcGxpY2F0aW9uSUQKaW50IDAKPT0KYm56IG1haW5fbDE0CnR4biBPbkNvbXBsZXRpb24KaW50IE9wdEluCj09CmJueiBtYWluX2wxMwp0eG4gT25Db21wbGV0aW9uCmludCBDbG9zZU91dAo9PQpibnogbWFpbl9sMTIKdHhuIE9uQ29tcGxldGlvbgppbnQgVXBkYXRlQXBwbGljYXRpb24KPT0KYm56IG1haW5fbDExCnR4biBPbkNvbXBsZXRpb24KaW50IERlbGV0ZUFwcGxpY2F0aW9uCj09CmJueiBtYWluX2wxMAp0eG5hIEFwcGxpY2F0aW9uQXJncyAwCmJ5dGUgImFzc2lnblVuaXZlcnNpdHlSb2xlIgo9PQpibnogbWFpbl9sOQp0eG5hIEFwcGxpY2F0aW9uQXJncyAwCmJ5dGUgImNoZWNrUm9sZSIKPT0KYm56IG1haW5fbDgKZXJyCm1haW5fbDg6CmludCAxCnJldHVybgptYWluX2w5Ogp0eG4gU2VuZGVyCmJ5dGUgIkNyZWF0b3IiCmFwcF9nbG9iYWxfZ2V0Cj09CmFzc2VydAp0eG4gTnVtQXBwQXJncwppbnQgMgo9PQphc3NlcnQKdHhuYSBBcHBsaWNhdGlvbkFyZ3MgMQpieXRlICJSb2xlIgppbnQgMQphcHBfbG9jYWxfcHV0CmludCAxCnJldHVybgptYWluX2wxMDoKdHhuIFNlbmRlcgpieXRlICJDcmVhdG9yIgphcHBfZ2xvYmFsX2dldAo9PQphc3NlcnQKaW50IDEKcmV0dXJuCm1haW5fbDExOgp0eG4gU2VuZGVyCmJ5dGUgIkNyZWF0b3IiCmFwcF9nbG9iYWxfZ2V0Cj09CmFzc2VydAppbnQgMQpyZXR1cm4KbWFpbl9sMTI6CmludCAxCnJldHVybgptYWluX2wxMzoKdHhuIFNlbmRlcgpieXRlICJSb2xlIgppbnQgMAphcHBfbG9jYWxfcHV0CmludCAxCnJldHVybgptYWluX2wxNDoKYnl0ZSAiQ3JlYXRvciIKdHhuIFNlbmRlcgphcHBfZ2xvYmFsX3B1dAppbnQgMQpyZXR1cm4K
+
+CLEAR PROGRAM (copy everything below this line):
+I3ByYWdtYSB2ZXJzaW9uIDYKaW50IDEKcmV0dXJuCg==
+
+STATE SCHEMA:
+- Global Byte Slices: 1
+- Global Integers: 0
+- Local Byte Slices: 0
+- Local Integers: 1
