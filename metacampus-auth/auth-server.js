@@ -10,10 +10,10 @@ app.set('trust proxy', 1);
 app.enable('trust proxy');
 
 // ===== CONFIGURATION =====
-const GOOGLE_CLIENT_ID = '559413874351-f7l22qe7s5vudomai8o7ciir76ur5bnq.apps.googleusercontent.com';
-const GOOGLE_CLIENT_SECRET = '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';
+const GOOGLE_CLIENT_ID = '*';
+const GOOGLE_CLIENT_SECRET = '*';
 const CALLBACK_URL = 'https://demo.metacampus.org/auth/google/callback';
-const SESSION_SECRET = 'XCnq8bNpHSa2Pv9uWelRYLeAoyyw8Z7gFHbGVH4RQ';
+const SESSION_SECRET = '*';
 
 // ===== SESSION SETUP =====
 app.use(session({
