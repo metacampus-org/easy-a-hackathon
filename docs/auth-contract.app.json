@@ -1,0 +1,187 @@
+{
+  "name": "MetaCAMPUS Authentication Contract",
+  "version": "2.0.0",
+  "description": "Authentication and role management contract for MetaCAMPUS platform",
+  "networks": {
+    "testnet": {
+      "appId": 748159417,
+      "deployedAt": "2024-10-22"
+    }
+  },
+  "state": {
+    "global": {
+      "numByteSlices": 5,
+      "numUints": 1
+    },
+    "local": {
+      "numByteSlices": 2,
+      "numUints": 1
+    }
+  },
+  "schema": {
+    "global": [
+      {
+        "name": "admin",
+        "type": "bytes",
+        "description": "Super admin wallet address"
+      },
+      {
+        "name": "contract_version",
+        "type": "bytes",
+        "description": "Version of the smart contract"
+      },
+      {
+        "name": "total_users",
+        "type": "uint64",
+        "description": "Total number of registered users"
+      }
+    ],
+    "local": [
+      {
+        "name": "role",
+        "type": "uint64",
+        "description": "User role: 0=student, 1=university_admin, 2=super_admin"
+      },
+      {
+        "name": "university_name",
+        "type": "bytes",
+        "description": "Associated university name (for students and university admins)"
+      },
+      {
+        "name": "is_active",
+        "type": "uint64",
+        "description": "Whether the user account is active (1) or suspended (0)"
+      }
+    ]
+  },
+  "methods": [
+    {
+      "name": "register_user",
+      "description": "Register a new user with a role",
+      "args": [
+        {
+          "name": "user_address",
+          "type": "address",
+          "description": "Algorand address of the user to register"
+        },
+        {
+          "name": "role",
+          "type": "uint64",
+          "description": "Role to assign: 0=student, 1=university_admin, 2=super_admin"
+        },
+        {
+          "name": "university_name",
+          "type": "string",
+          "description": "University name (required for students and university admins)"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      },
+      "permissions": {
+        "allowedCallers": ["super_admin", "university_admin"]
+      }
+    },
+    {
+      "name": "get_user_role",
+      "description": "Get the role of a user",
+      "args": [
+        {
+          "name": "user_address",
+          "type": "address",
+          "description": "Algorand address of the user"
+        }
+      ],
+      "returns": {
+        "type": "uint64",
+        "description": "User role: 0=student, 1=university_admin, 2=super_admin"
+      },
+      "permissions": {
+        "allowedCallers": ["any"]
+      }
+    },
+    {
+      "name": "update_user_status",
+      "description": "Activate or suspend a user account",
+      "args": [
+        {
+          "name": "user_address",
+          "type": "address",
+          "description": "Algorand address of the user"
+        },
+        {
+          "name": "is_active",
+          "type": "uint64",
+          "description": "1 to activate, 0 to suspend"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      },
+      "permissions": {
+        "allowedCallers": ["super_admin"]
+      }
+    },
+    {
+      "name": "verify_auth",
+      "description": "Verify if a user has a specific role",
+      "args": [
+        {
+          "name": "user_address",
+          "type": "address",
+          "description": "Algorand address of the user"
+        },
+        {
+          "name": "required_role",
+          "type": "uint64",
+          "description": "Required role: 0=student, 1=university_admin, 2=super_admin"
+        }
+      ],
+      "returns": {
+        "type": "uint64",
+        "description": "1 if user has required role and is active, 0 otherwise"
+      },
+      "permissions": {
+        "allowedCallers": ["any"]
+      }
+    }
+  ],
+  "roles": {
+    "student": {
+      "value": 0,
+      "description": "Student role - can view transcripts and request badges"
+    },
+    "university_admin": {
+      "value": 1,
+      "description": "University Admin role - can manage students and approve badges"
+    },
+    "super_admin": {
+      "value": 2,
+      "description": "Super Admin role - can manage universities and system settings"
+    }
+  },
+  "deployment": {
+    "approvalProgram": "See AUTH_CONTRACT_BASE64.txt",
+    "clearProgram": "BoEBQw==",
+    "globalStateSchema": {
+      "numByteSlices": 5,
+      "numUints": 1
+    },
+    "localStateSchema": {
+      "numByteSlices": 2,
+      "numUints": 1
+    }
+  },
+  "usage": {
+    "initialization": "Deploy contract with super admin wallet address as creator",
+    "registration": "Super admin or university admin calls register_user to add new users",
+    "verification": "Any user can call verify_auth to check permissions",
+    "management": "Super admin can update user status to activate/suspend accounts"
+  },
+  "notes": [
+    "Contract must be deployed by the designated super admin wallet",
+    "Super admin wallet address is stored in global state during deployment",
+    "All role assignments are permanent unless super admin updates them",
+    "Contract version 2.0 uses Pera Wallet for authentication"
+  ]
+}

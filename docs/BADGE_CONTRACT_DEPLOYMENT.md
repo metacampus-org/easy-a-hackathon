@@ -71,3 +71,25 @@ To delete the duplicate auth contract (748158465):
 ---
 
 **Ready to deploy?** Follow the steps above!
+
+## Appendix: EC2 Algorand Node (quick summary)
+
+If you plan to run your own Algorand node on AWS EC2 rather than using public nodes, the full step-by-step instructions are in `docs/EC2_ALGORAND_NODE_SETUP.md`. Below is a short summary and quick checklist so the Lora deployment steps above are still reproducible when using your EC2 node.
+
+- Launch an Ubuntu 22.04 instance (t2.medium or t2.large recommended). Open SSH (22) and Algorand ports (4001 for algod, 8980 for indexer) to your IP only.
+- SSH into the instance and install Algorand packages, start the algorand service and clone the TestNet data directory (see full guide).
+- (Optional) Install and configure Algorand Indexer with PostgreSQL. Create a PostgreSQL DB for the indexer and provide its connection string when starting the indexer.
+- Retrieve your node token from `/var/lib/algorand/data/algod.token` and use the EC2 public IP for the node URL: `http://<EC2_PUBLIC_IP>:4001`.
+- Update your local `.env.local` with the EC2 node values:
+
+```bash
+NEXT_PUBLIC_ALGOD_URL=http://<EC2_PUBLIC_IP>:4001
+NEXT_PUBLIC_INDEXER_URL=http://<EC2_PUBLIC_IP>:8980
+NEXT_PUBLIC_ALGOD_TOKEN=<your_algod_token>
+NEXT_PUBLIC_INDEXER_TOKEN=
+NEXT_PUBLIC_ALGORAND_NETWORK=testnet
+```
+
+Notes:
+- For development, we recommend using public TestNet nodes (AlgoNode, Nodely, PureStake) to avoid EC2 costs and long sync times; instructions for public nodes are in the EC2 guide's Quick Start section.
+- Full EC2 instructions (including commands, security group settings, and troubleshooting) are in `docs/EC2_ALGORAND_NODE_SETUP.md`.

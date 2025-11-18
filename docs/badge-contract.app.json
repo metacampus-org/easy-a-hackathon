@@ -1,0 +1,250 @@
+{
+  "name": "MetaCAMPUS Badge Management Contract",
+  "version": "2.0.0",
+  "description": "Badge request and issuance contract for course completion credentials",
+  "networks": {
+    "testnet": {
+      "appId": 0,
+      "deployedAt": "pending"
+    }
+  },
+  "state": {
+    "global": {
+      "numByteSlices": 10,
+      "numUints": 2
+    },
+    "local": {
+      "numByteSlices": 0,
+      "numUints": 0
+    }
+  },
+  "schema": {
+    "global": [
+      {
+        "name": "total_badges",
+        "type": "uint64",
+        "description": "Total number of badges minted"
+      },
+      {
+        "name": "total_requests",
+        "type": "uint64",
+        "description": "Total number of badge requests submitted"
+      },
+      {
+        "name": "contract_version",
+        "type": "bytes",
+        "description": "Version of the smart contract"
+      }
+    ],
+    "local": []
+  },
+  "methods": [
+    {
+      "name": "create_badge_request",
+      "description": "Student submits a badge request for course completion",
+      "args": [
+        {
+          "name": "student_hash",
+          "type": "string",
+          "description": "Unique identifier for the student"
+        },
+        {
+          "name": "course_name",
+          "type": "string",
+          "description": "Name of the course"
+        },
+        {
+          "name": "course_code",
+          "type": "string",
+          "description": "Course code (e.g., CS101)"
+        },
+        {
+          "name": "university_name",
+          "type": "string",
+          "description": "Name of the university"
+        },
+        {
+          "name": "semester",
+          "type": "string",
+          "description": "Semester of completion (e.g., Fall 2024)"
+        }
+      ],
+      "returns": {
+        "type": "uint64",
+        "description": "Request ID for tracking"
+      },
+      "permissions": {
+        "allowedCallers": ["student"]
+      }
+    },
+    {
+      "name": "approve_badge_request",
+      "description": "University admin approves a badge request",
+      "args": [
+        {
+          "name": "request_id",
+          "type": "uint64",
+          "description": "Badge request ID to approve"
+        },
+        {
+          "name": "approver_address",
+          "type": "address",
+          "description": "Wallet address of the approver"
+        },
+        {
+          "name": "timestamp",
+          "type": "uint64",
+          "description": "Unix timestamp of approval"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      },
+      "permissions": {
+        "allowedCallers": ["university_admin"]
+      }
+    },
+    {
+      "name": "create_meta_badge",
+      "description": "Mint a badge NFT after approval",
+      "args": [
+        {
+          "name": "request_id",
+          "type": "uint64",
+          "description": "Approved badge request ID"
+        },
+        {
+          "name": "student_address",
+          "type": "address",
+          "description": "Student wallet address to receive badge"
+        },
+        {
+          "name": "badge_data",
+          "type": "string",
+          "description": "JSON metadata for the badge"
+        }
+      ],
+      "returns": {
+        "type": "uint64",
+        "description": "Badge ID (NFT asset ID)"
+      },
+      "permissions": {
+        "allowedCallers": ["university_admin"]
+      }
+    },
+    {
+      "name": "verify_badge",
+      "description": "Verify if a badge is authentic",
+      "args": [
+        {
+          "name": "badge_id",
+          "type": "uint64",
+          "description": "Badge ID to verify"
+        },
+        {
+          "name": "student_hash",
+          "type": "string",
+          "description": "Student hash to verify against"
+        }
+      ],
+      "returns": {
+        "type": "uint64",
+        "description": "1 if badge is valid, 0 otherwise"
+      },
+      "permissions": {
+        "allowedCallers": ["any"]
+      }
+    }
+  ],
+  "badgeMetadata": {
+    "structure": {
+      "student_hash": "string - Unique student identifier",
+      "student_name": "string - Student full name",
+      "course_name": "string - Course name",
+      "course_code": "string - Course code",
+      "university_name": "string - University name",
+      "semester": "string - Semester completed",
+      "grade": "string - Final grade received",
+      "credits": "number - Course credits",
+      "completion_date": "string - ISO date of completion",
+      "approved_by": "string - Wallet address of approver",
+      "approved_at": "string - ISO date of approval",
+      "badge_type": "string - Type of badge (course_completion)",
+      "ipfs_hash": "string - IPFS hash of certificate image (optional)"
+    },
+    "example": {
+      "student_hash": "abc123xyz789",
+      "student_name": "John Doe",
+      "course_name": "Introduction to Computer Science",
+      "course_code": "CS101",
+      "university_name": "Example University",
+      "semester": "Fall 2024",
+      "grade": "A",
+      "credits": 3,
+      "completion_date": "2024-12-15",
+      "approved_by": "ABCDEF...",
+      "approved_at": "2024-12-16",
+      "badge_type": "course_completion",
+      "ipfs_hash": "QmX..."
+    }
+  },
+  "deployment": {
+    "approvalProgram": "See BADGE_CONTRACT_BASE64.txt",
+    "clearProgram": "BoEBQw==",
+    "globalStateSchema": {
+      "numByteSlices": 10,
+      "numUints": 2
+    },
+    "localStateSchema": {
+      "numByteSlices": 0,
+      "numUints": 0
+    }
+  },
+  "workflow": {
+    "steps": [
+      {
+        "step": 1,
+        "action": "Student completes course",
+        "description": "Student finishes course with passing grade"
+      },
+      {
+        "step": 2,
+        "action": "Student requests badge",
+        "description": "Student calls create_badge_request with course details"
+      },
+      {
+        "step": 3,
+        "action": "University admin reviews",
+        "description": "Admin verifies student completed course requirements"
+      },
+      {
+        "step": 4,
+        "action": "Admin approves request",
+        "description": "Admin calls approve_badge_request"
+      },
+      {
+        "step": 5,
+        "action": "Badge is minted",
+        "description": "System calls create_meta_badge to mint NFT"
+      },
+      {
+        "step": 6,
+        "action": "Badge appears in student profile",
+        "description": "Student can view and share badge"
+      }
+    ]
+  },
+  "usage": {
+    "studentRequest": "Students use MetaCAMPUS UI to submit badge requests after course completion",
+    "adminApproval": "University admins review pending requests and approve/reject via admin portal",
+    "badgeMinting": "Approved requests automatically trigger badge NFT creation",
+    "verification": "Anyone can verify badge authenticity using verify_badge method"
+  },
+  "notes": [
+    "Badge requests are stored in global state with unique IDs",
+    "Approved badges become NFTs owned by the student",
+    "Badge metadata is immutable once minted",
+    "Verification is public and permissionless",
+    "Contract integrates with authentication contract for role verification"
+  ]
+}
