@@ -1,246 +1,365 @@
-# Decentralized Student Transcript Management System
+# 🎓 MetaCAMPUS
 
-A blockchain-based system for managing and verifying student academic transcripts using Algorand technology. This system enables secure, transparent, and immutable record-keeping for educational institutions while providing instant verification capabilities.
+**Blockchain-Powered Academic Credential Management System**
 
-## 🎯 Project Overview
+[![Next.js](https://img.shields.io/badge/Next.js-15.2.4-black)](https://nextjs.org/)
+[![Algorand](https://img.shields.io/badge/Algorand-TestNet-blue)](https://algorand.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-This system creates a decentralized alternative to traditional transcript management, eliminating fraud, reducing verification time from weeks to seconds, and giving students full control over their academic records.
+> A decentralized platform for managing academic transcripts and course completion badges on the Algorand blockchain.
 
-### Key Features
+---
 
-- **Immutable Records**: Academic data stored permanently on Algorand blockchain
-- **Instant Verification**: Real-time transcript verification using cryptographic hashes
-- **Student Privacy**: Hash-based identification protects student personal information
-- **Institution Control**: Colleges manage their own student onboarding and transcript updates
-- **Global Access**: Worldwide institutions can verify transcripts instantly
-- **Cost Effective**: Minimal blockchain transaction fees compared to traditional verification
+## 🌟 Features
 
-## 🏗️ Technology Stack
+### For Students
+- 📜 **View Academic Transcripts** - Access your complete academic record on the blockchain
+- 🏆 **Request Course Badges** - Submit requests for course completion badges
+- 🔍 **Find Student Hash** - Locate your unique blockchain identifier
+- 💾 **Download Transcripts** - Export your academic data as JSON
 
-- **Blockchain**: Algorand Testnet
-- **Frontend**: Next.js 15 with TypeScript
-- **UI Framework**: Tailwind CSS with shadcn/ui components
-- **Wallet Integration**: Pera Algo Wallet SDK
-- **Smart Contracts**: PyTeal (Python for Algorand)
-- **Blockchain SDK**: AlgoSDK for JavaScript
+### For Universities
+- 👨‍🎓 **Onboard Students** - Register new students on the blockchain
+- 📚 **Manage Transcripts** - Add courses and update student records
+- ✅ **Approve Badges** - Review and approve badge requests
+- 🔐 **Verify Records** - Validate student credentials
+
+### For Super Admins
+- 🏛️ **University Management** - Approve university registrations
+- 📊 **System Statistics** - Monitor platform-wide metrics
+- 🔗 **Blockchain Monitoring** - Track all transactions
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- Pera Algo Wallet (mobile app or browser extension)
-- Algorand Testnet account with ALGO tokens
+- Node.js 18+ and npm/pnpm
+- Pera Wallet (for blockchain interactions)
+- Git
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/metacampus-org/easy-a-hackathon
-   cd easy-a-hackathon/easy-a-hackathon-frontend
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/metacampus.git
+cd metacampus
 
-2. **Install dependencies**
-   ```bash
-   npm install --legacy-peer-deps
-   ```
+# Install dependencies
+npm install
+# or
+pnpm install
 
-3. **Start the development server**
-   ```bash
-   npm run dev
-   ```
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your configuration
 
-4. **Access the application**
-   - Open [http://localhost:3000](http://localhost:3000)
-   - Connect your Pera Algo Wallet
-   - Choose your role: Student, College Admin, or External Institution
-
-## 📋 User Roles & Workflows
-
-### 1. College Administrator (`/admin/transcript`)
-
-**Purpose**: Onboard students and manage academic transcripts
-
-**Workflow**:
-1. Connect Pera Wallet to authenticate
-2. **Onboard Student**: 
-   - Enter student personal information
-   - Generate unique blockchain hash identifier
-   - Student receives their permanent hash ID
-3. **Manage Transcripts**:
-   - Search by student hash
-   - Add course completion records
-   - Update grades and credits
-   - Submit to blockchain with digital signature
-
-### 2. Student (`/student`)
-
-**Purpose**: View and share their own academic records
-
-**Workflow**:
-1. Obtain student hash from their institution
-2. Enter hash to view complete transcript
-3. Download transcript data for offline access
-4. Share verification hash with other institutions
-5. Monitor academic progress and GPA
-
-### 3. External Institution (`/verify`)
-
-**Purpose**: Verify academic records for admissions/employment
-
-**Workflow**:
-1. Receive student hash from applicant
-2. Enter hash into verification portal
-3. Instantly receive verified transcript data
-4. Download official verification report
-5. Confirm authenticity via blockchain
-
-## 🔐 Security & Privacy
-
-### Data Protection
-- **On-Chain**: Only hashed identifiers and encrypted academic data
-- **Off-Chain**: Personal information stored securely by institutions
-- **Access Control**: Students control who can access their records
-- **Immutability**: Records cannot be altered once written to blockchain
-
-### Verification Process
-1. Student provides their unique hash to institution
-2. Institution queries Algorand blockchain using hash
-3. Smart contract returns encrypted academic data
-4. System verifies cryptographic signatures
-5. Institution receives verified transcript with authenticity proof
-
-## 🧠 Smart Contract Architecture
-
-### Contract Functions
-
-```python
-# Student onboarding
-onboard_student(student_data) -> student_hash
-
-# Transcript management  
-update_transcript(student_hash, academic_data) -> transcript_hash
-
-# Verification
-verify_transcript(student_hash) -> verification_result
+# Run development server
+npm run dev
+# or
+pnpm dev
 ```
 
-## 🔄 Transaction Flow
-
-### 1. Student Onboarding
-```
-Admin -> Smart Contract -> Blockchain -> Student Hash Generated
-```
-
-### 2. Transcript Update
-```
-Admin -> Collect Course Data -> Smart Contract -> Blockchain Storage
-```
-
-### 3. Verification
-```
-External Institution -> Student Hash -> Smart Contract Query -> Verified Data
-```
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-easy-a-hackathon-frontend/
-├── app/                          # Next.js app directory
-│   ├── admin/transcript/         # College admin interface
-│   ├── student/                  # Student portal
-│   ├── verify/                   # Verification interface
-│   └── page.tsx                  # Home page
-├── components/                   # Reusable UI components
-│   ├── ui/                       # shadcn/ui components
-│   └── wallet-connect.tsx        # Wallet integration
-├── lib/                          # Core business logic
-│   ├── transcript-service.ts     # Main service layer
-│   ├── algorand.ts               # Blockchain connection
-│   ├── wallet.ts                 # Wallet management
-│   └── utils.ts                  # Utility functions
-├── contracts/                    # Smart contract code
-│   └── transcript_manager.py     # PyTeal contract
-└── public/                       # Static assets
-```
-
-### Key Services
-
-#### TranscriptService
-- `onboardStudent()`: Create new student blockchain record
-- `updateTranscript()`: Add/modify academic data
-- `verifyTranscript()`: Retrieve and verify student records
-- `generateStudentHash()`: Create unique identifiers
-- `calculateGradePoints()`: GPA calculations
-
-#### WalletService  
-- `connectWallet()`: Pera Wallet integration
-- `signTransaction()`: Cryptographic signing
-- `getWalletState()`: Connection status management
-
-#### AlgorandService
-- `createApplicationCall()`: Smart contract interactions
-- `submitTransaction()`: Blockchain submissions
-- `queryBlockchain()`: Data retrieval
-
-## 🎯 Benefits
-
-### For Students
-- **Ownership**: Complete control over academic records
-- **Portability**: Records travel with student globally
-- **Privacy**: Share only necessary information
-- **Permanence**: Records never lost or destroyed
-
-### For Institutions
-- **Efficiency**: Automated verification processes
-- **Security**: Elimination of transcript fraud
-- **Cost Savings**: Reduced administrative overhead
-- **Trust**: Cryptographic proof of authenticity
-
-### For Employers
-- **Confidence**: Verified academic credentials
-- **Speed**: Instant background checks
-- **Compliance**: Audit trail for verification
-- **Accuracy**: No human verification errors
-
-## 🔮 Future Enhancements
-
-### Phase 2 Features
-- **Multi-Institution Support**: Students from multiple colleges
-- **Advanced Analytics**: Institutional reporting dashboards
-- **API Integration**: Connect with existing SIS systems
-- **Mobile Application**: Native iOS/Android apps
-
-### Phase 3 Features
-- **Micro-Credentials**: Skill-based certifications
-- **AI Verification**: Automated course equivalency
-- **DeFi Integration**: Scholarship and loan platforms
-- **Global Standards**: International credential framework
-
-## 🆘 Support
-
-### Documentation
-- [Algorand Developer Docs](https://developer.algorand.org/)
-- [Pera Wallet Integration](https://perawallet.app/developers/)
-- [Next.js Documentation](https://nextjs.org/docs)
-
-### FAQ
-
-**Q: How secure is student data on the blockchain?**
-A: Personal information is hashed and encrypted. Only authorized parties with the student's hash can access records.
-
-**Q: What happens if a student loses their hash?**
-A: Institutions can regenerate access using the student's verified identity and original enrollment records.
-
-**Q: Can transcripts be modified after blockchain storage?**
-A: No, blockchain records are immutable. New entries can be added, but existing records cannot be changed.
-
-**Q: Is this FERPA compliant?**
-A: Yes, students control access to their records through private hash identifiers, maintaining privacy requirements.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-Built with ❤️ for the future of education technology on Algorand blockchain.
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```bash
+# Algorand Node Configuration
+NEXT_PUBLIC_ALGOD_SERVER=https://testnet-api.4160.nodely.dev
+NEXT_PUBLIC_ALGOD_PORT=443
+NEXT_PUBLIC_ALGOD_TOKEN=
+
+# Algorand Indexer Configuration
+NEXT_PUBLIC_INDEXER_SERVER=https://testnet-idx.4160.nodely.dev
+NEXT_PUBLIC_INDEXER_PORT=443
+NEXT_PUBLIC_INDEXER_TOKEN=
+
+# Smart Contract App IDs (TestNet)
+NEXT_PUBLIC_AUTH_APP_ID=733353488
+NEXT_PUBLIC_BADGE_APP_ID=733353489
+
+# Network Configuration
+NEXT_PUBLIC_NETWORK=TestNet
+```
+
+---
+
+## 📦 Tech Stack
+
+### Frontend
+- **Framework:** Next.js 15.2.4 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **UI Components:** shadcn/ui
+- **State Management:** React Context API
+
+### Blockchain
+- **Network:** Algorand (TestNet/MainNet)
+- **SDK:** AlgoSDK v3
+- **Wallet:** Pera Wallet integration
+- **Smart Contracts:** PyTeal (deployed)
+
+### Storage
+- **Development:** Browser localStorage
+- **Production:** Blockchain + IPFS (planned)
+
+---
+
+## 🏗️ Project Structure
+
+```
+metacampus/
+├── app/                      # Next.js app directory
+│   ├── page.tsx             # Landing page
+│   ├── student/             # Student portal
+│   ├── university-admin/    # University admin portal
+│   └── super-admin/         # Super admin dashboard
+├── components/              # React components
+│   ├── ui/                  # shadcn/ui components
+│   ├── header.tsx           # App header
+│   ├── route-guard.tsx      # Route protection
+│   └── wallet-button.tsx    # Wallet connection
+├── contexts/                # React contexts
+│   └── wallet-context.tsx   # Wallet state management
+├── lib/                     # Core business logic
+│   ├── algorand-client.ts   # Algorand blockchain client
+│   ├── transcript-service.ts # Transcript management
+│   ├── badge-service.ts     # Badge management
+│   └── file-storage-service.ts # Local storage
+├── docs/                    # Documentation
+├── public/                  # Static assets
+└── .env.local              # Environment variables (not in git)
+```
+
+---
+
+## 🔐 Smart Contracts
+
+### Deployed on Algorand TestNet
+
+#### Authentication Contract
+- **App ID:** `733353488`
+- **Purpose:** User role management (student, university, super admin)
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/733353488)
+
+#### Badge Management Contract
+- **App ID:** `733353489`
+- **Purpose:** Course completion badge issuance and verification
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/733353489)
+
+---
+
+## 🎯 User Roles
+
+### Student (Role: 0)
+- View personal transcripts
+- Request course completion badges
+- Download academic records
+- Find student hash
+
+### University Admin (Role: 1)
+- Onboard new students
+- Add courses to transcripts
+- Approve badge requests
+- Verify student records
+
+### Super Admin (Role: 2)
+- Approve university registrations
+- View system-wide statistics
+- Monitor blockchain transactions
+- Manage platform settings
+
+---
+
+## 🔄 Workflow
+
+### Student Onboarding
+1. University admin onboards student with personal info
+2. System generates unique student hash (blockchain identifier)
+3. Student record stored on blockchain
+4. Student can access portal with wallet
+
+### Transcript Management
+1. University admin adds courses to student transcript
+2. Courses include: name, grade, credits, semester, etc.
+3. GPA calculated automatically
+4. Updates stored on blockchain
+
+### Badge Issuance
+1. Student requests course completion badge
+2. University admin reviews request
+3. Admin approves badge
+4. Badge minted on blockchain
+5. Badge appears in student profile
+
+---
+
+## 📱 Wallet Integration
+
+### Pera Wallet
+MetaCAMPUS uses Pera Wallet for secure blockchain interactions:
+
+1. **Install Pera Wallet:**
+   - Mobile: [iOS](https://apps.apple.com/app/id1459898525) | [Android](https://play.google.com/store/apps/details?id=com.algorand.android)
+   - Web: [Pera Web Wallet](https://web.perawallet.app)
+
+2. **Connect Wallet:**
+   - Click "Connect Wallet" in the app
+   - Scan QR code or use WalletConnect
+   - Approve connection in Pera Wallet
+
+3. **Sign Transactions:**
+   - All blockchain operations require wallet signature
+   - Review transaction details before signing
+   - Transactions are free on TestNet
+
+---
+
+## 🧪 Testing
+
+### Local Testing
+```bash
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+### Blockchain Testing
+- Use TestNet for all development
+- Get free ALGO from [TestNet Faucet](https://bank.testnet.algorand.network/)
+- Monitor transactions on [Lora Explorer](https://lora.algokit.io/testnet)
+
+---
+
+## 🚀 Deployment
+
+### Deploy to Vercel (Recommended)
+
+1. **Push to GitHub:**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/YOUR_USERNAME/metacampus.git
+   git push -u origin master
+   ```
+
+2. **Deploy to Vercel:**
+   - Go to [vercel.com/new](https://vercel.com/new)
+   - Import your GitHub repository
+   - Add environment variables
+   - Click "Deploy"
+
+3. **Configure Environment Variables:**
+   - Add all variables from `.env.local`
+   - Ensure `NEXT_PUBLIC_*` prefix for client-side variables
+
+See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
+
+---
+
+## 📚 Documentation
+
+- **[Quick Start Guide](./docs/QUICK_START.md)** - Get started quickly
+- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Deploy to production
+- **[Project Status](./docs/PROJECT_STATUS.md)** - Current project state
+- **[Documentation Index](./docs/DOCUMENTATION_INDEX.md)** - All documentation
+- **[Cleanup Summary](./CLEANUP_COMPLETE.md)** - Recent codebase cleanup
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+
+---
+
+## 🔗 Links
+
+- **Live Demo:** [Coming Soon]
+- **Documentation:** [docs/](./docs/)
+- **Algorand Explorer:** [Lora TestNet](https://lora.algokit.io/testnet)
+- **Pera Wallet:** [perawallet.app](https://perawallet.app)
+
+---
+
+## 🙏 Acknowledgments
+
+- **Algorand Foundation** - Blockchain infrastructure
+- **Pera Wallet** - Wallet integration
+- **Vercel** - Hosting and deployment
+- **Next.js Team** - Framework
+- **shadcn/ui** - UI components
+
+---
+
+## 📞 Support
+
+- **Issues:** [GitHub Issues](https://github.com/YOUR_USERNAME/metacampus/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/YOUR_USERNAME/metacampus/discussions)
+- **Email:** [your-email@example.com]
+
+---
+
+## 🗺️ Roadmap
+
+### Current (v1.0.0)
+- ✅ Student transcript management
+- ✅ Badge request and approval system
+- ✅ University admin portal
+- ✅ Super admin dashboard
+- ✅ Pera Wallet integration
+
+### Planned (v1.1.0)
+- ⏭️ IPFS integration for document storage
+- ⏭️ Multi-university support
+- ⏭️ Advanced analytics dashboard
+- ⏭️ Mobile app (React Native)
+
+### Future (v2.0.0)
+- ⏭️ MainNet deployment
+- ⏭️ NFT badges
+- ⏭️ Credential verification API
+- ⏭️ Integration with existing SIS systems
+
+---
+
+## 📊 Status
+
+- **Version:** 1.0.0
+- **Status:** Production Ready ✅
+- **Network:** Algorand TestNet
+- **Last Updated:** October 22, 2025
+
+---
+
+**Built with ❤️ using Algorand blockchain technology**
+# metacampus-demo
+# metacampus-demo
+# metacampus-demo
+# metacampus-demo

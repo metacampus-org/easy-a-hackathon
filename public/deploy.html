@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaCAMPUS - Deploy Smart Contract</title>
+    <script src="https://cdn.jsdelivr.net/npm/@perawallet/connect@1.4.2/dist/index.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/algosdk@2.9.0/dist/browser/algosdk.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .status-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .log.show {
+            display: block;
+        }
+        
+        .log-line {
+            margin-bottom: 5px;
+        }
+        
+        .success {
+            color: #4ade80;
+        }
+        
+        .error {
+            color: #f87171;
+        }
+        
+        .info {
+            color: #60a5fa;
+        }
+        
+        .warning {
+            color: #fbbf24;
+        }
+        
+        .result-box {
+            background: #dcfce7;
+            border: 2px solid #4ade80;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .result-box.show {
+            display: block;
+        }
+        
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #166534;
+            margin-bottom: 15px;
+        }
+        
+        .result-item {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .result-label {
+            font-weight: 600;
+            color: #166534;
+        }
+        
+        .result-value {
+            color: #15803d;
+            word-break: break-all;
+        }
+        
+        .copy-btn {
+            background: #4ade80;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #22c55e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Deploy MetaCAMPUS Contract</h1>
+        <p class="subtitle">Deploy your authentication smart contract to Algorand Testnet</p>
+        
+        <div class="status-box">
+            <div class="status-item">
+                <span class="status-icon" id="wallet-status">⚪</span>
+                <span id="wallet-text">Wallet: Not connected</span>
+            </div>
+            <div class="status-item">
+                <span class="status-icon" id="balance-status">⚪</span>
+                <span id="balance-text">Balance: Unknown</span>
+            </div>
+            <div class="status-item">
+                <span class="status-icon" id="network-status">⚪</span>
+                <span id="network-text">Network: Algorand Testnet</span>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary" id="connect-btn" onclick="connectWallet()">
+            Connect Pera Wallet
+        </button>
+        
+        <button class="btn btn-primary" id="deploy-btn" onclick="deployContract()" style="display: none;" disabled>
+            Deploy Smart Contract
+        </button>
+        
+        <button class="btn btn-secondary" id="disconnect-btn" onclick="disconnectWallet()" style="display: none;">
+            Disconnect Wallet
+        </button>
+        
+        <div class="log" id="log"></div>
+        
+        <div class="result-box" id="result-box">
+            <div class="result-title">✅ Deployment Successful!</div>
+            <div class="result-item">
+                <span class="result-label">Application ID:</span>
+                <span class="result-value" id="app-id"></span>
+                <button class="copy-btn" onclick="copyAppId()">Copy</button>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Transaction ID:</span>
+                <span class="result-value" id="tx-id"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Deployer Address:</span>
+                <span class="result-value" id="deployer-addr"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">View on AlgoExplorer:</span>
+                <a href="#" id="explorer-link" target="_blank" style="color: #15803d;">Open</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const peraWallet = new window.PeraWalletConnect.PeraWalletConnect();
+        const algodClient = new window.algosdk.Algodv2('', 'https://testnet-api.algonode.cloud', 443);
+        
+        let accountAddress = null;
+        
+        // TEAL programs (your authentication contract)
+        const APPROVAL_TEAL = `#pragma version 8
+txn ApplicationID
+int 0
+==
+bnz main_l10
+txn OnCompletion
+int OptIn
+==
+bnz main_l9
+txn OnCompletion
+int CloseOut
+==
+bnz main_l8
+txn OnCompletion
+int UpdateApplication
+==
+bnz main_l7
+txn OnCompletion
+int DeleteApplication
+==
+bnz main_l6
+txna ApplicationArgs 0
+byte "assignUniversityRole"
+==
+bnz main_l5
+txna ApplicationArgs 0
+byte "checkRole"
+==
+bnz main_l4
+err
+main_l4:
+int 1
+return
+main_l5:
+txn Sender
+byte "Creator"
+app_global_get
+==
+assert
+txn NumAppArgs
+int 2
+==
+assert
+txna ApplicationArgs 1
+byte "Role"
+int 1
+app_local_put
+int 1
+return
+main_l6:
+txn Sender
+byte "Creator"
+app_global_get
+==
+assert
+int 1
+return
+main_l7:
+txn Sender
+byte "Creator"
+app_global_get
+==
+assert
+int 1
+return
+main_l8:
+int 1
+return
+main_l9:
+txn Sender
+byte "Role"
+int 0
+app_local_put
+int 1
+return
+main_l10:
+byte "Creator"
+txn Sender
+app_global_put
+int 1
+return`;
+
+        const CLEAR_TEAL = `#pragma version 8
+int 1
+return`;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            logDiv.classList.add('show');
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            line.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        async function connectWallet() {
+            try {
+                log('Connecting to Pera Wallet...', 'info');
+                const accounts = await peraWallet.connect();
+                accountAddress = accounts[0];
+                
+                document.getElementById('wallet-status').textContent = '✅';
+                document.getElementById('wallet-text').textContent = `Wallet: ${accountAddress.substring(0, 8)}...${accountAddress.substring(accountAddress.length - 6)}`;
+                
+                document.getElementById('connect-btn').style.display = 'none';
+                document.getElementById('disconnect-btn').style.display = 'block';
+                
+                log(`Connected: ${accountAddress}`, 'success');
+                
+                // Check balance
+                await checkBalance();
+                
+            } catch (error) {
+                log(`Connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkBalance() {
+            try {
+                log('Checking account balance...', 'info');
+                const accountInfo = await algodClient.accountInformation(accountAddress).do();
+                const balance = accountInfo.amount / 1000000;
+                
+                document.getElementById('balance-status').textContent = balance >= 0.2 ? '✅' : '⚠️';
+                document.getElementById('balance-text').textContent = `Balance: ${balance.toFixed(2)} ALGO`;
+                
+                if (balance >= 0.2) {
+                    log(`Balance: ${balance.toFixed(2)} ALGO - Ready to deploy!`, 'success');
+                    document.getElementById('deploy-btn').style.display = 'block';
+                    document.getElementById('deploy-btn').disabled = false;
+                } else {
+                    log(`Insufficient balance: ${balance.toFixed(2)} ALGO (need 0.2 minimum)`, 'warning');
+                    log('Get testnet ALGO from: https://bank.testnet.algorand.network/', 'info');
+                }
+                
+                document.getElementById('network-status').textContent = '✅';
+                
+            } catch (error) {
+                log(`Balance check failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function deployContract() {
+            try {
+                document.getElementById('deploy-btn').disabled = true;
+                document.getElementById('deploy-btn').textContent = 'Deploying...';
+                
+                log('Starting deployment...', 'info');
+                
+                // Compile TEAL programs
+                log('Compiling TEAL programs...', 'info');
+                const approvalCompiled = await algodClient.compile(APPROVAL_TEAL).do();
+                const clearCompiled = await algodClient.compile(CLEAR_TEAL).do();
+                
+                const approvalProgram = new Uint8Array(Buffer.from(approvalCompiled.result, 'base64'));
+                const clearProgram = new Uint8Array(Buffer.from(clearCompiled.result, 'base64'));
+                
+                log('✅ TEAL programs compiled', 'success');
+                
+                // Get transaction parameters
+                log('Preparing transaction...', 'info');
+                const params = await algodClient.getTransactionParams().do();
+                
+                // Create application creation transaction
+                const txn = window.algosdk.makeApplicationCreateTxnFromObject({
+                    from: accountAddress,
+                    suggestedParams: params,
+                    onComplete: window.algosdk.OnApplicationComplete.NoOpOC,
+                    approvalProgram,
+                    clearProgram,
+                    numLocalInts: 1,
+                    numLocalByteSlices: 0,
+                    numGlobalInts: 0,
+                    numGlobalByteSlices: 1,
+                });
+                
+                log('Requesting signature from Pera Wallet...', 'info');
+                
+                // Sign with Pera Wallet
+                const singleTxnGroups = [{ txn, signers: [accountAddress] }];
+                const signedTxn = await peraWallet.signTransaction([singleTxnGroups]);
+                
+                log('✅ Transaction signed', 'success');
+                log('Submitting to network...', 'info');
+                
+                // Submit transaction
+                const { txId } = await algodClient.sendRawTransaction(signedTxn).do();
+                log(`Transaction ID: ${txId}`, 'info');
+                
+                // Wait for confirmation
+                log('Waiting for confirmation...', 'info');
+                const confirmedTxn = await window.algosdk.waitForConfirmation(algodClient, txId, 4);
+                
+                const appId = confirmedTxn['application-index'];
+                
+                log('✅ Contract deployed successfully!', 'success');
+                log(`Application ID: ${appId}`, 'success');
+                
+                // Show results
+                document.getElementById('app-id').textContent = appId;
+                document.getElementById('tx-id').textContent = txId;
+                document.getElementById('deployer-addr').textContent = accountAddress;
+                document.getElementById('explorer-link').href = `https://testnet.algoexplorer.io/application/${appId}`;
+                document.getElementById('result-box').classList.add('show');
+                
+                document.getElementById('deploy-btn').textContent = '✅ Deployed!';
+                
+                // Show instructions
+                log('', 'info');
+                log('Next steps:', 'info');
+                log(`1. Copy the Application ID: ${appId}`, 'info');
+                log('2. Update your .env.local file:', 'info');
+                log(`   NEXT_PUBLIC_APP_ID=${appId}`, 'info');
+                log('3. Restart your dev server: npm run dev', 'info');
+                
+            } catch (error) {
+                log(`Deployment failed: ${error.message}`, 'error');
+                document.getElementById('deploy-btn').disabled = false;
+                document.getElementById('deploy-btn').textContent = 'Deploy Smart Contract';
+            }
+        }
+        
+        function disconnectWallet() {
+            peraWallet.disconnect();
+            accountAddress = null;
+            
+            document.getElementById('wallet-status').textContent = '⚪';
+            document.getElementById('wallet-text').textContent = 'Wallet: Not connected';
+            document.getElementById('balance-status').textContent = '⚪';
+            document.getElementById('balance-text').textContent = 'Balance: Unknown';
+            document.getElementById('network-status').textContent = '⚪';
+            
+            document.getElementById('connect-btn').style.display = 'block';
+            document.getElementById('deploy-btn').style.display = 'none';
+            document.getElementById('disconnect-btn').style.display = 'none';
+            
+            log('Wallet disconnected', 'info');
+        }
+        
+        function copyAppId() {
+            const appId = document.getElementById('app-id').textContent;
+            navigator.clipboard.writeText(appId);
+            alert('Application ID copied to clipboard!');
+        }
+        
+        // Check if wallet is already connected
+        peraWallet.reconnectSession().then((accounts) => {
+            if (accounts.length) {
+                accountAddress = accounts[0];
+                document.getElementById('wallet-status').textContent = '✅';
+                document.getElementById('wallet-text').textContent = `Wallet: ${accountAddress.substring(0, 8)}...${accountAddress.substring(accountAddress.length - 6)}`;
+                document.getElementById('connect-btn').style.display = 'none';
+                document.getElementById('disconnect-btn').style.display = 'block';
+                checkBalance();
+            }
+        }).catch((e) => {
+            // No active session
+        });
+    </script>
+</body>
+</html>
