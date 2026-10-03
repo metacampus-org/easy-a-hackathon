@@ -6,13 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start",
-    "test:blockchain": "tsx test/standalone-test.ts",
-    "test:full": "tsx test/local-testing.ts",
-    "debug:blockchain": "tsx test/blockchain-debug.ts",
-    "test:auth": "tsx test/auth-e2e-validation.ts",
-    "deploy:contract": "node scripts/deploy-auth-lora.js",
-    "deploy:simple": "node scripts/deploy-auth-simple.js"
+    "start": "next start"
   },
   "dependencies": {
     "@blockshake/defly-connect": "^1.2.1",

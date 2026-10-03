@@ -51,9 +51,7 @@ npm install
 # or
 pnpm install
 
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your configuration
+# Set environment variables in .env.local (gitignored). Do not commit app ids or keys.
 
 # Run development server
 npm run dev
@@ -82,9 +80,11 @@ NEXT_PUBLIC_INDEXER_SERVER=https://testnet-idx.4160.nodely.dev
 NEXT_PUBLIC_INDEXER_PORT=443
 NEXT_PUBLIC_INDEXER_TOKEN=
 
-# Smart Contract App IDs (TestNet)
-NEXT_PUBLIC_AUTH_APP_ID=733353488
-NEXT_PUBLIC_BADGE_APP_ID=733353489
+# Smart contract app ids are not committed.
+# After a hosted Lora TestNet create, set them only in .env.local:
+# NEXT_PUBLIC_APP_ID=
+# NEXT_PUBLIC_ALGORAND_APP_ID=
+# NEXT_PUBLIC_BADGE_APP_ID=
 
 # Network Configuration
 NEXT_PUBLIC_NETWORK=TestNet
@@ -143,17 +143,9 @@ metacampus/
 
 ## 🔐 Smart Contracts
 
-### Deployed on Algorand TestNet
+### TestNet contracts
 
-#### Authentication Contract
-- **App ID:** `733353488`
-- **Purpose:** User role management (student, university, super admin)
-- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/733353488)
-
-#### Badge Management Contract
-- **App ID:** `733353489`
-- **Purpose:** Course completion badge issuance and verification
-- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/733353489)
+Do not treat a previously used app id as required config. Create the app on hosted Lora TestNet ([App Lab or Txn Wizard](https://lora.algokit.io/testnet)), then put the new id in `.env.local` only.
 
 ---
 
@@ -267,17 +259,13 @@ npm start
    - Add all variables from `.env.local`
    - Ensure `NEXT_PUBLIC_*` prefix for client-side variables
 
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
+There is no deployment guide in this repo. Do not follow a link to a file that is not here.
 
 ---
 
 ## 📚 Documentation
 
-- **[Quick Start Guide](./docs/QUICK_START.md)** - Get started quickly
-- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Deploy to production
-- **[Project Status](./docs/PROJECT_STATUS.md)** - Current project state
-- **[Documentation Index](./docs/DOCUMENTATION_INDEX.md)** - All documentation
-- **[Cleanup Summary](./CLEANUP_COMPLETE.md)** - Recent codebase cleanup
+- **[Badge contract notes](./docs/BADGE_CONTRACT_DEPLOYMENT.md)** - Lora Txn Wizard create steps that are actually in the repo
 
 ---
 
