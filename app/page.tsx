@@ -483,6 +483,7 @@ export default function HomePage() {
           </p>
           <div className="text-xs text-muted-foreground px-4">
             <p>© 2025 MetaCAMPUS. Empowering students through blockchain technology.</p>
+            <p className="mt-2">Powered by xAI.</p>
           </div>
         </div>
       </footer>
